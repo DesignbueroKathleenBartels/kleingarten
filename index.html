@@ -1,0 +1,2270 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#EEF3EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141A16" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kleingarten">
+<meta name="description" content="Gartenplan, Pflanzen, Aufgaben und Fotos unseres Kleingartens">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unser Kleingarten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F7F3; --panel:#FFFFFF; --ink:#26322A; --ink-2:#5C6A60; --ink-3:#8D988F;
+  --line:#DDE2D8; --sage:#556B4B; --sage-soft:#E8EDE0; --blue:#2F5BD3; --red:#C8424F;
+  --accent:#DD3C9C; --sheet-shadow:0 -8px 30px rgba(38,50,42,.12);
+  --sans:"Instrument Sans","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --nav-h:62px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1B211D; --panel:#242B26; --ink:#E9EEE6; --ink-2:#B5C0B7; --ink-3:#86928A;
+    --line:#38423B; --sage:#9DBB8E; --sage-soft:#2F3A31; --blue:#7FA1FF; --red:#F07C86;
+    --sheet-shadow:0 -8px 30px rgba(0,0,0,.4); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1B211D; --panel:#242B26; --ink:#E9EEE6; --ink-2:#B5C0B7; --ink-3:#86928A;
+  --line:#38423B; --sage:#9DBB8E; --sage-soft:#2F3A31; --blue:#7FA1FF; --red:#F07C86;
+  --sheet-shadow:0 -8px 30px rgba(0,0,0,.4); color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--paper);color:var(--ink);font:15px/1.45 var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.app{display:grid;grid-template-rows:auto 1fr var(--nav-h);height:100%;position:relative}
+header{display:flex;align-items:baseline;gap:12px;padding:14px 18px 10px;border-bottom:1px solid var(--line);background:var(--paper)}
+header h1{margin:0;font:400 26px/1 var(--serif)}
+header .sub{color:var(--ink-3);font-size:13px}
+header .status{margin-left:auto;font-size:12px;color:var(--ink-3);white-space:nowrap}
+main{position:relative;overflow:hidden;min-height:0}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+
+/* Segmente & Chips */
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;box-shadow:0 1px 2px rgba(0,0,0,.05);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{border:0;background:none;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:500;color:var(--ink-2);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 1px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:20px;padding:5px 11px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chips button .n{opacity:.6;margin-left:4px}
+.chips.months button{padding:5px 9px}
+.chips button.now{border-color:var(--ink)}
+
+/* Plan */
+#planWrap{position:absolute;inset:0;touch-action:none;background:var(--paper);cursor:grab}
+#planWrap.dragging{cursor:grabbing}
+#plan{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #plan .base{filter:brightness(.82) saturate(.9)}}
+:root[data-theme="dark"] #plan .base{filter:brightness(.82) saturate(.9)}
+#plan text{font-family:var(--sans)!important}
+.plant{cursor:pointer}
+.plant .body{vector-effect:non-scaling-stroke;transition:opacity .2s}
+.plant.sel .ring{stroke:var(--ink);stroke-width:2.2;fill:none;vector-effect:non-scaling-stroke}
+.moving .plant:not(.sel){opacity:.35;pointer-events:none}
+.picking .plant:not(.sel) .body{fill-opacity:.28!important;stroke-opacity:.35}
+.picking .plant.sel .ring{stroke:var(--blue);stroke-width:3.2;fill:none;vector-effect:non-scaling-stroke}
+.picking .plant.sel .body{stroke:var(--blue);stroke-width:1.6}
+#labels{pointer-events:none;display:none}
+#plan.labels #labels{display:block}
+#labels text{font-family:var(--sans);font-weight:500;fill:#26322A;paint-order:stroke;stroke:rgba(255,255,255,.88);stroke-linejoin:round}
+#labels text.dim{display:none}
+.ghost{fill:none;stroke:var(--blue);stroke-dasharray:4 3;vector-effect:non-scaling-stroke;stroke-width:1.6}
+.topbar{position:absolute;left:12px;right:64px;top:10px;z-index:3;display:grid;gap:7px;justify-items:start}
+.topbar .chips{max-width:100%}
+.mapctl{position:absolute;right:12px;top:10px;display:flex;flex-direction:column;gap:7px;z-index:3}
+.mapctl button{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:42px;height:40px;font-size:17px;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.05);padding:0}
+.mapctl button.txt{font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.mapctl .sep{height:4px}
+.mapctl .compass{position:relative}
+.mapctl .compass svg{width:26px;height:26px;display:block;margin:auto;transition:transform .15s}
+.mapctl .compass.turned{border-color:var(--ink)}
+.mapctl .rotbtn{display:none}
+@media (hover:hover) and (pointer:fine){.mapctl .rotbtn{display:block}}
+@media (prefers-reduced-motion: reduce){.mapctl .compass svg{transition:none}}
+.legend{position:absolute;left:12px;bottom:12px;z-index:3;background:color-mix(in srgb,var(--panel) 93%,transparent);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--ink-2);display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.18)}
+.legend .lg-neu{border:1.6px dashed var(--blue);background:transparent}
+.legend .lg-st{background:var(--red);width:8px;height:8px;border:0}
+.legend .lg-stripe{background:repeating-linear-gradient(45deg,#A6B14C 0 3px,#fff 3px 6px)}
+.legend .lg-kahl{border:1.5px dashed #8A6A3A;background:transparent}
+.legend .lg-ein{border:1.2px dotted #8D988F;background:transparent}
+.legend b{font-weight:600;color:var(--ink)}
+.banner{position:absolute;left:50%;transform:translateX(-50%);top:96px;z-index:4;background:var(--ink);color:var(--paper);border-radius:14px;padding:10px 12px 10px 16px;display:none;align-items:center;gap:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.2);width:max-content;max-width:calc(100% - 24px)}
+.banner.on{display:flex}
+.banner button{border:0;border-radius:9px;padding:7px 12px;background:var(--paper);color:var(--ink);font-weight:600}
+.banner button.ghostbtn{background:transparent;color:var(--paper);font-weight:500}
+
+/* Blatt */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--panel);border-radius:18px 18px 0 0;box-shadow:var(--sheet-shadow);max-height:80%;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .22s ease}
+.sheet.on{transform:none}
+@media (prefers-reduced-motion: reduce){.sheet{transition:none}}
+.sheet .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0}
+.sheet .inner{overflow:auto;padding:10px 20px 22px}
+.sheet .x{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:22px;color:var(--ink-3);width:40px;height:40px;z-index:1}
+@media (min-width:900px){
+  .app.sheet-open .mapctl{right:410px}
+  .sheet{left:auto;right:16px;bottom:16px;top:16px;width:380px;max-height:none;border-radius:18px;transform:translateX(calc(100% + 24px))}
+  .sheet .grab{display:none}
+}
+.p-name{font:400 30px/1.1 var(--serif);margin:6px 40px 2px 0}
+.p-sorte{font-size:15px;color:var(--ink-2)}
+.p-bot{font:italic 17px/1.3 var(--serif);color:var(--ink-2);margin-top:2px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
+.tag{font-size:12px;border-radius:20px;padding:3px 10px;border:1px solid var(--line);color:var(--ink-2)}
+.tag.neu{border-color:var(--blue);color:var(--blue);border-style:dashed}
+.tag.st{border-color:var(--red);color:var(--red)}
+.tag.unsicher{background:var(--sage-soft);border-color:transparent}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:14px 0;font-size:14px}
+dl.facts dt{color:var(--ink-3)}
+dl.facts dd{margin:0}
+.sw{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.15)}
+.inh{color:var(--ink-3);font-size:12px}
+.note{background:var(--sage-soft);border-radius:12px;padding:10px 12px;font-size:14px;margin:10px 0}
+.block{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.block h3{font:400 20px/1.2 var(--serif);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.block h3 .grow{flex:1}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:9px 14px;font-weight:500}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:9px}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent);margin-left:auto}
+.btn:disabled{opacity:.5;cursor:default}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin:6px 0 12px}
+.months span{font-size:10px;text-align:center;color:var(--ink-3);padding:5px 0 7px;border-radius:5px;background:var(--sage-soft);position:relative}
+.months span.on{color:var(--ink);font-weight:600}
+.months span.now{outline:1.5px solid var(--ink);outline-offset:-1.5px}
+.months span i{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);display:flex;gap:1px}
+.months span i b{width:4px;height:4px;border-radius:50%;display:block}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tasks li{display:grid;grid-template-columns:64px 1fr;gap:10px;font-size:14px}
+.tasks .when{font-size:12px;color:var(--ink-3);padding-top:1px}
+.ttag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.02em;margin-right:6px}
+.hints{margin:12px 0 0;padding:0 0 0 16px;font-size:13px;color:var(--ink-2)}
+.hints li{margin:3px 0}
+.muted{color:var(--ink-3);font-size:13px}
+.thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.thumbs button{flex:none;width:76px;height:76px;border-radius:10px;overflow:hidden;border:0;padding:0;background:var(--sage-soft)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Formular */
+form.edit{display:grid;gap:12px;margin-top:8px}
+form.edit label,.fld{display:grid;gap:4px;font-size:12px;color:var(--ink-3)}
+form.edit input[type=text],form.edit input[type=password],form.edit input[type=number],form.edit input[type=date],form.edit select,form.edit textarea{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 11px;font-size:15px;color:var(--ink)}
+form.edit textarea{min-height:70px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.swatches{display:flex;flex-wrap:wrap;gap:7px}
+.swatches button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.18);padding:0}
+.swatches button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:2px}
+.swatches .none{background:repeating-linear-gradient(45deg,var(--paper) 0 4px,var(--line) 4px 6px)}
+.mtoggle{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.mtoggle button{border:1px solid var(--line);background:var(--paper);border-radius:6px;font-size:10.5px;padding:6px 0;color:var(--ink-2)}
+.mtoggle button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mtoggle.inherited button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 35%,var(--paper));border-color:transparent;color:var(--ink)}
+.checks{display:flex;gap:18px;flex-wrap:wrap}
+.checks label{display:flex!important;align-items:center;gap:8px;color:var(--ink)!important;font-size:14px!important}
+.linkbtn{border:0;background:none;padding:0;color:var(--blue);font-size:13px}
+
+/* Listen */
+.scroll{position:absolute;inset:0;overflow:auto;padding:14px 18px 30px}
+.wrap{max-width:760px;margin:0 auto}
+.search{width:100%;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 14px;font-size:15px}
+h2.grp{font:400 22px/1.2 var(--serif);margin:20px 0 6px}
+h2.grp small{font:13px var(--sans);color:var(--ink-3);margin-left:6px}
+ul.plist,ul.tlist{list-style:none;margin:0;padding:0}
+ul.plist li button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:10px 2px}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:1.5px solid rgba(0,0,0,.2)}
+.dot.neu{border:1.6px dashed var(--blue);background:transparent!important}
+.pl-main{flex:1;min-width:0}
+.pl-main b{font-weight:500}
+.pl-main span{color:var(--ink-3);font-size:13px;margin-left:6px}
+.pl-main em{display:block;font:italic 14px var(--serif);color:var(--ink-3)}
+.pl-side{font-size:12px;color:var(--ink-3);white-space:nowrap}
+ul.tlist li{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid var(--line)}
+ul.tlist input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--sage);flex:none}
+ul.tlist .t-main{flex:1;min-width:0}
+ul.tlist .done .t-text{color:var(--ink-3);text-decoration:line-through}
+ul.tlist .t-title{font-weight:500}
+ul.tlist .t-sub{color:var(--ink-2);font-size:14px;margin-top:2px}
+ul.tlist .t-meta{margin-top:5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+ul.tlist .del{border:0;background:none;color:var(--ink-3);font-size:18px;width:32px;height:32px;flex:none}
+.pill{font-size:11.5px;color:var(--ink-3);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+.adopted{font-size:12.5px;color:var(--sage);font-weight:600}
+.addtodo{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin:10px 0 4px}
+@media (max-width:520px){.addtodo{grid-template-columns:1fr auto}.addtodo input{grid-column:1/-1}}
+.addtodo input{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 12px}
+.addtodo select{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0 8px}
+.mnav{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.mnav h2{font:400 28px/1.1 var(--serif);margin:0;flex:1;text-align:center}
+.mnav button{border:1px solid var(--line);background:var(--panel);border-radius:10px;width:40px;height:40px;font-size:18px}
+.mnav .today{width:auto;padding:0 12px;font-size:13px}
+.empty{color:var(--ink-3);padding:14px 2px}
+.tnew{width:100%;margin:6px 0 2px;padding:11px 14px}
+h2.grp.over{color:var(--red)}
+.pill.over{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
+ul.tlist li.tap{cursor:pointer}
+ul.tlist li.tap:hover .t-title{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+ul.tlist .t-hint{color:var(--ink-3);font-size:13.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.tlist .chev{color:var(--ink-3);font-size:20px;line-height:20px;flex:none;align-self:center}
+ul.tlist .done .t-hint{display:none}
+.moverow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tdesc{margin-top:12px;font-size:15px;line-height:1.5;white-space:pre-wrap;color:var(--ink)}
+.chiplist{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.pchip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:20px;background:var(--paper);font-size:13px;color:var(--ink)}
+.pchip button{border:0;background:none;color:inherit;font:inherit;padding:4px 10px}
+.pchip .pc-x{padding:4px 9px 4px 2px;color:var(--ink-3);font-size:15px}
+.pchip .pc-go+.pc-x{margin-left:-6px}
+details.donebox summary{cursor:pointer;color:var(--ink-3);font-size:14px;padding:14px 2px;list-style:none}
+details.donebox summary::before{content:"▸ ";}
+details.donebox[open] summary::before{content:"▾ ";}
+
+/* Fotos */
+.ftop{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.grid button{position:relative;aspect-ratio:1;border:0;padding:0;border-radius:10px;overflow:hidden;background:var(--sage-soft)}
+.grid img{width:100%;height:100%;object-fit:cover;display:block}
+.grid .cap{position:absolute;left:0;right:0;bottom:0;padding:14px 7px 5px;font-size:11px;color:#fff;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.bigimg{width:100%;border-radius:12px;display:block;margin-top:6px;background:var(--sage-soft)}
+.upprev{display:flex;gap:6px;flex-wrap:wrap}
+.upprev img{width:70px;height:70px;object-fit:cover;border-radius:8px}
+.meter{font-size:12px;color:var(--ink-3);margin-top:18px}
+
+
+nav.tabs{display:flex;border-top:1px solid var(--line);background:var(--panel)}
+nav.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--ink-3)}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+nav.tabs button[aria-current="page"]{color:var(--ink)}
+nav.tabs .badge{font-size:10px;background:var(--red);color:#fff;border-radius:10px;padding:0 5px;margin-left:3px}
+.toast{position:absolute;left:50%;bottom:calc(var(--nav-h) + 16px);transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 14px;border-radius:12px;font-size:14px;z-index:9;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%}
+.toast.on{opacity:1}
+
+/* ================= iOS Liquid Glass ================= */
+:root{
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
+  --serif:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",Arial,sans-serif;
+  --tint:#2F7D4F; --tint-ink:#fff;
+  --bg-1:#EEF3EA; --bg-2:#F7E3EE; --bg-3:#E2ECF6;
+  --glass:rgba(255,255,255,.52); --glass-strong:rgba(255,255,255,.78); --glass-thin:rgba(255,255,255,.34);
+  --glass-edge:rgba(255,255,255,.75); --glass-line:rgba(38,50,42,.08);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.25);
+  --glass-shadow:0 10px 30px rgba(30,45,35,.12), 0 1px 3px rgba(30,45,35,.08);
+  --fill:rgba(38,50,42,.06); --fill-2:rgba(38,50,42,.1);
+  --blur:blur(22px) saturate(185%);
+  --head-h:56px; --nav-h:64px; --nav-gap:10px; --nav-space:calc(var(--nav-h) + var(--nav-gap) * 2);
+  --line:rgba(38,50,42,.1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --tint:#6FCF8E; --tint-ink:#0E1A12;
+    --bg-1:#141A16; --bg-2:#241A22; --bg-3:#16202A;
+    --glass:rgba(40,46,42,.5); --glass-strong:rgba(36,42,38,.82); --glass-thin:rgba(255,255,255,.06);
+    --glass-edge:rgba(255,255,255,.16); --glass-line:rgba(255,255,255,.08);
+    --glass-hi:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.04);
+    --glass-shadow:0 10px 30px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
+    --fill:rgba(255,255,255,.08); --fill-2:rgba(255,255,255,.13); --line:rgba(255,255,255,.1);
+  }
+}
+:root[data-theme="dark"]{
+  --tint:#6FCF8E; --tint-ink:#0E1A12;
+  --bg-1:#141A16; --bg-2:#241A22; --bg-3:#16202A;
+  --glass:rgba(40,46,42,.5); --glass-strong:rgba(36,42,38,.82); --glass-thin:rgba(255,255,255,.06);
+  --glass-edge:rgba(255,255,255,.16); --glass-line:rgba(255,255,255,.08);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.04);
+  --glass-shadow:0 10px 30px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
+  --fill:rgba(255,255,255,.08); --fill-2:rgba(255,255,255,.13); --line:rgba(255,255,255,.1);
+}
+body{font-size:16px;letter-spacing:-.01em;
+  background:radial-gradient(60% 45% at 10% 8%,var(--bg-2),transparent 70%),radial-gradient(55% 50% at 95% 35%,var(--bg-3),transparent 70%),radial-gradient(70% 60% at 30% 100%,var(--bg-1),transparent 70%),var(--paper);background-attachment:fixed}
+
+/* gemeinsames Glas */
+header,nav.tabs,.seg,.chips button,.mapctl button,.legend,.banner,.sheet,.toast,.btn,.search,ul.tlist,ul.plist,.mnav button,.pchip,.sheet .x{
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+
+/* Rahmen: Inhalt läuft unter Kopf- und Tableiste */
+.app{display:block}
+main{position:absolute;inset:0}
+header{position:absolute;left:0;right:0;top:0;z-index:5;height:var(--head-h);align-items:center;padding:0 18px;
+  background:var(--glass);border-bottom:.5px solid var(--glass-line);box-shadow:inset 0 -1px 0 rgba(255,255,255,.15)}
+header h1{font:700 20px/1 var(--serif);letter-spacing:-.025em}
+header .sub{font-size:15px;color:var(--ink-3)}
+header .status{font-size:13px}
+
+nav.tabs{position:absolute;z-index:5;left:max(12px,calc(50% - 260px));right:max(12px,calc(50% - 260px));bottom:var(--nav-gap);height:var(--nav-h);
+  border:.5px solid var(--glass-edge);border-radius:calc(var(--nav-h) / 2);background:var(--glass);box-shadow:var(--glass-hi),var(--glass-shadow);padding:5px;gap:2px}
+nav.tabs button{border-radius:calc((var(--nav-h) - 10px) / 2);font-size:11px;font-weight:600;color:var(--ink-2);transition:background .2s,color .2s}
+nav.tabs button svg{width:24px;height:24px;stroke-width:1.8}
+nav.tabs button[aria-current="page"]{color:var(--tint);background:var(--glass-strong);box-shadow:var(--glass-hi),0 2px 8px rgba(0,0,0,.06)}
+nav.tabs .badge{background:#FF3B30;font-weight:700}
+
+.scroll{padding:calc(var(--head-h) + 16px) 16px calc(var(--nav-space) + 24px)}
+.toast{bottom:calc(var(--nav-space) + 8px)}
+
+/* Plan-Overlays */
+.topbar{top:calc(var(--head-h) + 10px)}
+.mapctl{top:calc(var(--head-h) + 10px)}
+.legend{bottom:calc(var(--nav-space) + 2px)}
+.banner{top:calc(var(--head-h) + 92px)}
+#planWrap{background:transparent}
+
+/* Segmente */
+.seg{background:var(--fill-2);border:0;border-radius:999px;padding:3px;box-shadow:none;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.topbar .seg,#v-todo .seg{background:var(--glass);border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi),var(--glass-shadow)}
+.seg button{border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;color:var(--ink-2);transition:background .2s,color .2s}
+.seg button[aria-pressed="true"]{background:var(--glass-strong);color:var(--ink);box-shadow:var(--glass-hi),0 2px 8px rgba(0,0,0,.1)}
+
+/* Chips */
+.chips{padding:3px 2px 6px}
+.chips button{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--glass-hi),0 2px 8px rgba(0,0,0,.06)}
+.chips button[aria-pressed="true"]{background:var(--tint);border-color:transparent;color:var(--tint-ink)}
+.chips button.now{border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi),0 0 0 1.5px var(--tint) inset}
+.chips button.now[aria-pressed="true"]{box-shadow:none}
+
+/* Kartenknöpfe */
+.mapctl{gap:8px}
+.mapctl button{width:44px;height:44px;border-radius:50%;background:var(--glass);border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi),var(--glass-shadow);font-size:19px}
+.mapctl button.txt{font-size:9.5px;letter-spacing:.04em}
+.mapctl .compass.turned{border-color:var(--glass-edge);box-shadow:var(--glass-hi),var(--glass-shadow),0 0 0 2px var(--tint) inset}
+.legend{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:18px;box-shadow:var(--glass-hi),var(--glass-shadow);padding:9px 14px;color:var(--ink)}
+.banner{background:rgba(20,26,22,.62);color:#fff;border:.5px solid rgba(255,255,255,.18);border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 12px 32px rgba(0,0,0,.25);padding:8px 8px 8px 18px}
+.banner button{border-radius:999px;padding:8px 16px;background:#fff;color:#14201A}
+.banner button.ghostbtn{background:rgba(255,255,255,.12);color:#fff}
+
+/* Blatt */
+.sheet{z-index:7;left:8px;right:8px;bottom:8px;border-radius:30px;background:var(--glass-strong);border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi),0 20px 60px rgba(0,0,0,.22);max-height:calc(100% - var(--head-h) - 20px);transition:transform .32s cubic-bezier(.2,.9,.25,1.05)}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--fill-2);margin-top:7px}
+.sheet .inner{padding:8px 20px 22px}
+.sheet .x{width:32px;height:32px;right:14px;top:14px;border-radius:50%;background:var(--fill);font-size:18px;line-height:1;color:var(--ink-2);display:grid;place-items:center}
+@media (min-width:900px){
+  .sheet{top:calc(var(--head-h) + 12px);bottom:12px;right:12px;left:auto;width:390px;max-height:none;border-radius:30px}
+  .app.sheet-open .mapctl{right:414px}
+}
+.p-name{font:700 28px/1.12 var(--serif);letter-spacing:-.03em}
+.p-bot{font:italic 16px/1.3 var(--sans)}
+.block{border-top:.5px solid var(--line)}
+.block h3{font:600 17px/1.2 var(--sans);letter-spacing:-.02em}
+.tag{background:var(--fill);border-color:transparent;font-weight:500;padding:4px 11px}
+.tag.neu{background:transparent}
+.tag.st{background:color-mix(in srgb,var(--red) 12%,transparent);border-color:transparent}
+.note{background:var(--fill);border-radius:16px}
+.months span{background:var(--fill);border-radius:7px}
+.months span.now{outline-color:var(--tint)}
+
+/* Knöpfe */
+.btn{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:999px;padding:10px 18px;font-weight:600;box-shadow:var(--glass-hi),0 2px 8px rgba(0,0,0,.06)}
+.btn.sm{border-radius:999px;padding:6px 13px;font-size:13.5px}
+.btn.primary{background:var(--tint);color:var(--tint-ink);border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 14px color-mix(in srgb,var(--tint) 35%,transparent)}
+.btn.danger{color:#FF3B30;background:color-mix(in srgb,#FF3B30 10%,transparent);border-color:transparent;box-shadow:none}
+.linkbtn{color:var(--tint);font-weight:500;font-size:14px}
+
+/* Formulare */
+form.edit label,.fld{font-size:13px;font-weight:500;color:var(--ink-2)}
+form.edit input[type=text],form.edit input[type=password],form.edit input[type=number],form.edit input[type=date],form.edit select,form.edit textarea{background:var(--fill);border:0;border-radius:14px;padding:11px 13px;font-size:16px}
+form.edit input:focus,form.edit select:focus,form.edit textarea:focus{outline:none;box-shadow:0 0 0 2px var(--tint)}
+.mtoggle button{background:var(--fill);border:0;border-radius:8px}
+.mtoggle button[aria-pressed="true"]{background:var(--accent)}
+.search{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:999px;padding:11px 18px;box-shadow:var(--glass-hi),var(--glass-shadow);font-size:16px}
+ul.tlist input[type=checkbox],.checks input[type=checkbox]{accent-color:var(--tint)}
+ul.tlist input[type=checkbox]{width:22px;height:22px;border-radius:50%}
+
+/* Gruppierte Listen */
+h2.grp{font:700 21px/1.2 var(--serif);letter-spacing:-.025em;margin:26px 4px 8px}
+h2.grp small{font-size:14px}
+ul.plist,ul.tlist{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:22px;box-shadow:var(--glass-hi),var(--glass-shadow);overflow:hidden}
+ul.plist li button{padding:12px 16px;border-bottom:.5px solid var(--line)}
+ul.tlist li{padding:13px 14px 13px 16px;border-bottom:.5px solid var(--line)}
+ul.plist li:last-child button,ul.tlist li:last-child{border-bottom:0}
+ul.tlist li.tap:active{background:var(--fill)}
+ul.tlist li.tap:hover .t-title{text-decoration:none}
+ul.tlist .t-title{font-weight:600}
+.pill{background:var(--fill);border-color:transparent;padding:2px 9px;font-weight:500}
+.pill.over{background:color-mix(in srgb,var(--red) 12%,transparent)}
+.pchip{background:var(--glass);border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi)}
+.empty{padding:16px 6px}
+.tnew{padding:13px 18px;font-size:16px}
+details.donebox summary{padding:18px 6px;font-weight:500}
+.mnav h2{font:700 24px/1.1 var(--serif);letter-spacing:-.025em}
+.mnav button{width:44px;height:44px;border-radius:50%;background:var(--glass);border:.5px solid var(--glass-edge);box-shadow:var(--glass-hi),var(--glass-shadow)}
+.mnav .today{border-radius:999px}
+.grid{gap:8px}
+.grid button{border-radius:16px}
+.thumbs button{border-radius:14px}
+.bigimg{border-radius:18px}
+
+.pl-main em{font:italic 14px var(--sans)}
+.toast{background:rgba(20,26,22,.66);color:#fff;border:.5px solid rgba(255,255,255,.18);border-radius:999px;padding:10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+
+/* Ohne Unschärfe-Unterstützung: deckender */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :root{--glass:rgba(255,255,255,.92);--glass-strong:#fff}
+}
+@media (prefers-reduced-transparency: reduce){
+  :root{--glass:var(--panel);--glass-strong:var(--panel)}
+}
+@media (prefers-reduced-motion: reduce){.sheet{transition:none}nav.tabs button{transition:none}}
+.acct{margin-left:4px;border:.5px solid var(--glass-edge);background:var(--glass);box-shadow:var(--glass-hi);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--tint);white-space:nowrap;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.acct.on{color:var(--ink-2)}
+.acct .av{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--tint);color:var(--tint-ink);font-size:11px;margin-right:6px;vertical-align:-6px}
+@media (max-width:430px){header .sub{display:none}header .status{display:none}.acct{margin-left:auto}.acct .nm{display:none}.acct .av{margin:0}}
+.setup{max-width:520px;margin:calc(var(--head-h) + 30px) auto 0;padding:0 18px}
+.setup .card{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:22px;box-shadow:var(--glass-hi),var(--glass-shadow);padding:18px 20px}
+.offline{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--head-h) + 6px);z-index:6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;background:rgba(20,26,22,.66);color:#fff;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.hidden,[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Unser Kleingarten</h1>
+    <span class="sub" id="viewTitle">Plan</span>
+    <span class="status" id="status">Lädt …</span>
+    <button type="button" class="acct" id="acct" aria-label="Anmelden">Anmelden</button>
+  </header>
+  <main>
+    <section class="view on" id="v-plan" aria-label="Gartenplan">
+      <div id="planWrap">
+        <svg id="plan" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Grundriss des Kleingartens">
+          <defs><pattern id="stripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#ffffff"/><rect width="3" height="6" fill="#A6B14C"/></pattern></defs>
+          <g id="world"><g class="base">
+  <!-- Generator: Adobe Illustrator 30.3.0, SVG Export Plug-In . SVG Version: 2.1.3 Build 182)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11 {
+        fill: none;
+      }
+
+      .st12 {
+        fill: url(#pav17);
+      }
+
+      .st12, .st13, .st14, .st15, .st16, .st17, .st18, .st19, .st20, .st5, .st21, .st22, .st23, .st24, .st25, .st26, .st27, .st28, .st29, .st30, .st31, .st32, .st33 {
+        stroke: #b9b5ac;
+      }
+
+      .st34, .st35, .st36, .st37, .st38, .st39, .st40, .st41, .st42, .st43, .st44, .st45, .st46, .st47, .st48, .st49, .st50 {
+        isolation: isolate;
+      }
+
+      .st34, .st35, .st37, .st40, .st41, .st42, .st43, .st44, .st46, .st47, .st49 {
+        font-family: AvenirNext-Medium, 'Avenir Next';
+        font-weight: 500;
+      }
+
+      .st34, .st35, .st41, .st44, .st45, .st46, .st47, .st48, .st49 {
+        fill: #7a857c;
+      }
+
+      .st34, .st37 {
+        font-size: 6px;
+      }
+
+      .st51, .st52, .st53 {
+        fill: #2b1625;
+      }
+
+      .st13 {
+        stroke-miterlimit: 4;
+        stroke-width: 1px;
+      }
+
+      .st13, .st54 {
+        fill: #dcd9d2;
+      }
+
+      .st55 {
+        fill: #edb9ce;
+      }
+
+      .st56 {
+        fill: #a6b14c;
+      }
+
+      .st57, .st42 {
+        fill: #172918;
+      }
+
+      .st1 {
+        stroke-width: 3px;
+      }
+
+      .st1, .st58, .st59, .st10, .st60, .st11 {
+        stroke: #2f3a33;
+      }
+
+      .st61 {
+        fill: #ffa5db;
+      }
+
+      .st62, .st63, .st64, .st65, .st66, .st67 {
+        fill: #526149;
+      }
+
+      .st63 {
+        stroke-dasharray: 4 4;
+      }
+
+      .st63, .st64, .st68, .st4, .st69, .st52, .st65, .st66, .st6, .st67 {
+        stroke: #556b4b;
+      }
+
+      .st63, .st64, .st68, .st69, .st52, .st66, .st6, .st70 {
+        stroke-width: 1.3px;
+      }
+
+      .st63, .st64, .st68, .st69, .st52, .st67 {
+        fill-opacity: .85;
+      }
+
+      .st71 {
+        fill: url(#soil91);
+      }
+
+      .st71, .st72, .st73, .st74, .st75, .st76, .st77, .st78, .st79, .st80, .st81, .st82, .st83, .st84, .st85, .st86 {
+        stroke: #c7b59c;
+      }
+
+      .st71, .st72, .st73, .st74, .st75, .st76, .st77, .st78, .st79, .st80, .st81, .st82, .st83, .st84, .st85, .st86, .st7, .st9, .st10 {
+        stroke-width: 1.2px;
+      }
+
+      .st72 {
+        fill: url(#soil92);
+      }
+
+      .st73 {
+        fill: url(#soil94);
+      }
+
+      .st74 {
+        fill: url(#soil93);
+      }
+
+      .st75 {
+        fill: url(#soil95);
+      }
+
+      .st76 {
+        fill: url(#soil96);
+      }
+
+      .st35 {
+        font-size: 13.9823904px;
+      }
+
+      .st2, .st3, .st8 {
+        stroke: #526149;
+      }
+
+      .st2, .st4 {
+        stroke-dasharray: 2 7;
+      }
+
+      .st87, .st36, .st40, .st43, .st59, .st50 {
+        fill: #2f3a33;
+      }
+
+      .st88 {
+        fill: #1e1614;
+      }
+
+      .st14 {
+        fill: url(#pav712);
+      }
+
+      .st14, .st15, .st16, .st17, .st18, .st19, .st20, .st25, .st26, .st27, .st28, .st29, .st30, .st31, .st32, .st33 {
+        stroke-width: .5px;
+      }
+
+      .st15 {
+        fill: url(#pav714);
+      }
+
+      .st16 {
+        fill: url(#pav711);
+      }
+
+      .st17 {
+        fill: url(#pav713);
+      }
+
+      .st18 {
+        fill: url(#pav710);
+      }
+
+      .st19 {
+        fill: url(#pav715);
+      }
+
+      .st36, .st38, .st45, .st48 {
+        font-family: AvenirNext-Regular, 'Avenir Next';
+      }
+
+      .st36, .st41, .st42, .st45 {
+        font-size: 11px;
+      }
+
+      .st89 {
+        fill: #dd3c9c;
+      }
+
+      .st20 {
+        fill: url(#pav7);
+      }
+
+      .st3 {
+        stroke-linejoin: round;
+      }
+
+      .st3, .st8 {
+        stroke-linecap: round;
+        stroke-width: 20px;
+      }
+
+      .st37, .st38, .st68, .st90 {
+        fill: #79822f;
+      }
+
+      .st38, .st44, .st48 {
+        font-size: 10px;
+      }
+
+      .st91 {
+        fill: #d1d16d;
+      }
+
+      .st92 {
+        fill: #ede3d5;
+      }
+
+      .st77 {
+        fill: url(#soil1);
+      }
+
+      .st78 {
+        fill: url(#soil9);
+      }
+
+      .st79 {
+        fill: url(#soil8);
+      }
+
+      .st80 {
+        fill: url(#soil2);
+      }
+
+      .st81 {
+        fill: url(#soil3);
+      }
+
+      .st82 {
+        fill: url(#soil5);
+      }
+
+      .st83 {
+        fill: url(#soil7);
+      }
+
+      .st84 {
+        fill: url(#soil4);
+      }
+
+      .st85 {
+        fill: url(#soil6);
+      }
+
+      .st93 {
+        fill: #9450c9;
+      }
+
+      .st40, .st46 {
+        font-size: 12px;
+      }
+
+      .st58 {
+        fill: url(#hatch);
+      }
+
+      .st58, .st65, .st11 {
+        stroke-width: 1.6px;
+      }
+
+      .st94 {
+        fill: #c7d8b4;
+      }
+
+      .st69 {
+        fill: #b4c6a2;
+      }
+
+      .st43, .st50 {
+        font-size: 13px;
+      }
+
+      .st95 {
+        fill: #9aadab;
+      }
+
+      .st5, .st59, .st60 {
+        stroke-width: .8px;
+      }
+
+      .st66 {
+        fill-opacity: .9;
+      }
+
+      .st96 {
+        fill: #55350f;
+      }
+
+      .st86 {
+        fill: #cdbda4;
+      }
+
+      .st53 {
+        opacity: .85;
+      }
+
+      .st21 {
+        fill: #efede8;
+      }
+
+      .st97 {
+        fill: #bfa8d2;
+      }
+
+      .st47 {
+        font-size: 5.7334805px;
+      }
+
+      .st98 {
+        fill: #8e1857;
+      }
+
+      .st70 {
+        fill: #d5dee3;
+        stroke: #8fa1ab;
+      }
+
+      .st99 {
+        fill: #c7b59c;
+      }
+
+      .st22 {
+        fill: url(#pav);
+      }
+
+      .st100 {
+        fill: #391147;
+      }
+
+      .st101 {
+        fill: #baafb8;
+      }
+
+      .st67 {
+        stroke-miterlimit: 3.9999999;
+        stroke-width: 1.2999999px;
+      }
+
+      .st49 {
+        font-size: 8.1961861px;
+      }
+
+      .st102 {
+        fill: #c3d3b3;
+      }
+
+      .st103 {
+        fill: #7e7574;
+      }
+
+      .st104 {
+        fill: #b788e2;
+      }
+
+      .st7 {
+        stroke: #a9a59d;
+      }
+
+      .st105 {
+        fill: #542582;
+      }
+
+      .st50 {
+        font-family: AvenirNext-UltraLight, 'Avenir Next';
+        font-weight: 100;
+      }
+
+      .st106 {
+        fill: #c9c6bf;
+      }
+
+      .st23 {
+        fill: url(#pav2);
+      }
+
+      .st24 {
+        fill: url(#pav1);
+      }
+
+      .st9 {
+        stroke: #7a857c;
+        stroke-dasharray: 6 5;
+      }
+
+      .st107 {
+        fill: #c64766;
+      }
+
+      .st60 {
+        fill: #f6f7f4;
+      }
+
+      .st25 {
+        fill: url(#pav79);
+      }
+
+      .st26 {
+        fill: url(#pav75);
+      }
+
+      .st27 {
+        fill: url(#pav71);
+      }
+
+      .st28 {
+        fill: url(#pav73);
+      }
+
+      .st29 {
+        fill: url(#pav74);
+      }
+
+      .st30 {
+        fill: url(#pav72);
+      }
+
+      .st31 {
+        fill: url(#pav78);
+      }
+
+      .st32 {
+        fill: url(#pav76);
+      }
+
+      .st33 {
+        fill: url(#pav77);
+      }
+    </style>
+    <pattern id="pav" x="0" y="0" width="21" height="21" patternTransform="translate(-9.6332321 17273.1748047)" patternUnits="userSpaceOnUse" viewBox="0 0 21 21">
+      <g>
+        <rect class="st0" width="21" height="21"/>
+        <g>
+          <rect class="st0" width="21" height="21"/>
+          <rect class="st54" width="21" height="21"/>
+          <path class="st5" d="M21,0H0v21"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil9" x="0" y="0" width="10" height="10" patternTransform="translate(0 900)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="pav1" x="0" y="0" width="21" height="21" patternTransform="translate(.7797599 17287.326355)" patternUnits="userSpaceOnUse" viewBox="0 0 21 21">
+      <g>
+        <rect class="st0" width="21" height="21"/>
+        <g>
+          <rect class="st0" width="21" height="21"/>
+          <rect class="st54" width="21" height="21"/>
+          <path class="st5" d="M21,0H0v21"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="pav2" x="0" y="0" width="21" height="21" patternTransform="translate(-25 17252.5867066)" patternUnits="userSpaceOnUse" viewBox="0 0 21 21">
+      <g>
+        <rect class="st0" width="21" height="21"/>
+        <g>
+          <rect class="st0" width="21" height="21"/>
+          <rect class="st54" width="21" height="21"/>
+          <path class="st5" d="M21,0H0v21"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="pav7" x="0" y="0" width="21" height="21" patternTransform="translate(-22.727386 17228.9177613)" patternUnits="userSpaceOnUse" viewBox="0 0 21 21">
+      <g>
+        <rect class="st0" width="21" height="21"/>
+        <g>
+          <rect class="st0" width="21" height="21"/>
+          <rect class="st54" width="21" height="21"/>
+          <path class="st5" d="M21,0H0v21"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="pav71" data-name="pav7" patternTransform="translate(-14.727386 17214.4733168)" xlink:href="#pav7"/>
+    <pattern id="pav72" data-name="pav7" patternTransform="translate(-13.9099313 17228.9177613)" xlink:href="#pav7"/>
+    <pattern id="pav73" data-name="pav7" patternTransform="translate(-13.9099313 17220.9177613)" xlink:href="#pav7"/>
+    <pattern id="pav74" data-name="pav7" patternTransform="translate(-13.9099313 17231.1200182)" xlink:href="#pav7"/>
+    <pattern id="pav75" data-name="pav7" patternTransform="translate(-8.4976049 17240.9533515)" xlink:href="#pav7"/>
+    <pattern id="pav76" data-name="pav7" patternTransform="translate(6.1030895 17244.866546)" xlink:href="#pav7"/>
+    <pattern id="pav77" data-name="pav7" patternTransform="translate(14.6751382 17258.1547404)" xlink:href="#pav7"/>
+    <pattern id="pav78" data-name="pav7" patternTransform="translate(13.5727076 17274.6981432)" xlink:href="#pav7"/>
+    <pattern id="pav79" data-name="pav7" patternTransform="translate(-2.1434382 17287.3613377)" xlink:href="#pav7"/>
+    <pattern id="pav710" data-name="pav7" patternTransform="translate(-4.8239938 17296.1269627)" xlink:href="#pav7"/>
+    <pattern id="pav711" data-name="pav7" patternTransform="translate(-19.2059382 17311.9516154)" xlink:href="#pav7"/>
+    <pattern id="pav712" data-name="pav7" patternTransform="translate(-4.6877091 17208.5844279)" xlink:href="#pav7"/>
+    <pattern id="pav713" data-name="pav7" patternTransform="translate(5.8530895 17208.5844279)" xlink:href="#pav7"/>
+    <pattern id="pav714" data-name="pav7" patternTransform="translate(15.7124645 17208.5844279)" xlink:href="#pav7"/>
+    <pattern id="pav715" data-name="pav7" patternTransform="translate(21.8435409 17208.5844279)" xlink:href="#pav7"/>
+    <pattern id="pav17" x="0" y="0" width="21" height="21" patternTransform="translate(-25 17264.4484253)" patternUnits="userSpaceOnUse" viewBox="0 0 21 21">
+      <g>
+        <rect class="st0" width="21" height="21"/>
+        <g>
+          <rect class="st0" width="21" height="21"/>
+          <rect class="st54" width="21" height="21"/>
+          <path class="st5" d="M21,0H0v21"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil91" data-name="soil9" patternTransform="translate(-15.507874 17283.4484253)" xlink:href="#soil9"/>
+    <pattern id="soil92" data-name="soil9" patternTransform="translate(-18 17285.7072443)" xlink:href="#soil9"/>
+    <pattern id="soil93" data-name="soil9" patternTransform="translate(-18 17292.1777187)" xlink:href="#soil9"/>
+    <pattern id="soil94" data-name="soil9" patternTransform="translate(-18 17283.4484253)" xlink:href="#soil9"/>
+    <pattern id="soil1" x="0" y="0" width="10" height="10" patternTransform="translate(-28.7996035 17264.3474738)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil2" x="0" y="0" width="10" height="10" patternTransform="translate(-19.7239044 17264.3474738)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil3" x="0" y="0" width="10" height="10" patternTransform="translate(-25.0287457 17264.3474738)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil4" x="0" y="0" width="10" height="10" patternTransform="translate(-25.0287457 17271.3396613)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil5" x="0" y="0" width="10" height="10" patternTransform="translate(-28.7996035 17266.4223436)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil6" x="0" y="0" width="10" height="10" patternTransform="translate(-28.7996035 17274.6774435)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil7" x="0" y="0" width="10" height="10" patternTransform="translate(-23.969155 17275.9354124)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil8" x="0" y="0" width="10" height="10" patternTransform="translate(-898.0527202 17290.319519) scale(.9402264 1)" patternUnits="userSpaceOnUse" viewBox="0 0 10 10">
+      <g>
+        <rect class="st0" width="10" height="10"/>
+        <g>
+          <rect class="st0" width="10" height="10"/>
+          <rect class="st92" width="10" height="10"/>
+          <circle class="st99" cx="3" cy="4" r=".9000001"/>
+          <circle class="st99" cx="8" cy="8" r=".6999998"/>
+        </g>
+      </g>
+    </pattern>
+    <pattern id="soil95" data-name="soil9" patternTransform="translate(-15538.0740385 621.7769454) rotate(90)" xlink:href="#soil9"/>
+    <pattern id="soil96" data-name="soil9" patternTransform="translate(-18 17258.1484375)" xlink:href="#soil9"/>
+    <pattern id="hatch" x="0" y="0" width="8" height="8" patternTransform="translate(-4399.2032617 12220.8414672) rotate(45)" patternUnits="userSpaceOnUse" viewBox="0 0 8 8">
+      <g>
+        <rect class="st0" width="8" height="8"/>
+        <g>
+          <rect class="st0" width="8" height="8"/>
+          <rect class="st106" width="8" height="8"/>
+          <line class="st7" y2="8"/>
+        </g>
+      </g>
+    </pattern>
+  </defs>
+  <path class="st94" d="M48.5,580l.5,2.5999756,125.6000061,186.3496185,3.6999969,3,217.4999847,34.7999878,105.2000122-9.3999634,636.5921016-9.4000244-173-638.7495971-703.2921138-41.5s-84.5233431,242.3107805-115.0965333,323.8392878c-30.6591167,81.7576444-97.7034545,148.4607152-97.7034545,148.4607152Z"/>
+  <polygon class="st22" points="783.3667603 138.8224869 825.1800537 140.5905151 824.5951538 185.0420685 783.3667603 185.0420685 783.3667603 138.8224869"/>
+  <path id="bed-staudenbeet" class="st78" d="M600,127.2000122s.4543221,45.9772599.4543221,46.5419646c0,0-213.2595212-4.6549677-219.6701456-5.0823427-50.823427-3.3882285-63.120001-2.187967-76.7998452,25.9764182-9.5999807,19.7646661-.3076861,27.8330858-6.2117522,41.7881511-18.6352566,44.0469701-33.5066949,24.766343-38.3999226,40.6587416-1.5120021,4.9107341-1.1294095,18.6352566-7.3411617,36.1411036-6.4295497,18.1196402-22.7247382,27.6492105-13.5962238,41.6345403,25.789023,39.5100426,160.7998037,18.5928794,163.6521441,78.4920285,3.2118593,67.4490447-77.8197473,21.0613878-82.7178726,16.1632625-18.0648228-18.0648228-50.2552914-.3420926-75.1116315,5.7046809-13.0585082,3.1767284-47.5390073-10.4585816-60.9001369,11.2926437-5.2570064,8.5581334-8.3309502,18.0801592-11.0989731,27.7349932-13.6736384,47.6935023-30.6470507,37.0671997-47.7991883,83.6230018-6.655461,18.0648228.9507801,44.6866668,6.655461,51.3421278,10.1723555,11.8677481,22.7493825-2.9703668,35.1788716,25.9010931,6.7314606,15.6359711-25.6710702,44.6866696-33.2773113,27.5726269-.0002899-.0005188-84.516634-102.6850476-84.516634-102.6850476,0,0,67.4000015-79.2000122,67.4000816-79.2002092,5.4064842-13.2987052,10.8069112-26.5998892,16.2194574-39.8961277,11.4535707-28.1363709,22.8027548-55.2621627,32.9303472-83.6274132,8.8242225-24.7147864,17.648445-49.4295728,26.4726675-74.1443593,21.0037557-58.8270904,42.0075113-117.6541808,63.011267-176.4812711,2.255389-6.3168691,4.5107781-12.6337382,6.7661671-18.9506073l338.7000122,19.5Z"/>
+  <polygon class="st24" points="919.7797847 166.6718292 946.240478 167.2638397 991.2342524 312.9016113 919.7797847 312.1229248 919.7797847 166.6718292"/>
+  <rect class="st23" x="436.0042725" y="721.7194687" width="115.7515869" height="80.4188125"/>
+  <rect class="st13" x="953.3926483" y="156.7217906" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-8.0229675 287.5769055) rotate(-16.9428535)"/>
+  <rect class="st13" x="960.5281954" y="183.3010957" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-15.4589366 290.8099816) rotate(-16.9428535)"/>
+  <rect class="st13" x="967.4134098" y="210.2711398" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-23.0196395 293.987066) rotate(-16.9428535)"/>
+  <rect class="st13" x="974.106514" y="236.8503989" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-30.474799 297.0912044) rotate(-16.9428535)"/>
+  <rect class="st13" x="980.6995549" y="263.4296613" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-37.9343027 300.1661827) rotate(-16.9428535)"/>
+  <rect class="st13" x="987.8856999" y="290.4729238" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-45.503281 303.4341416) rotate(-16.9428535)"/>
+  <rect class="st13" x="994.4933332" y="317.5307349" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-53.1016089 306.5341434) rotate(-16.9428535)"/>
+  <rect class="st13" x="1001.186433" y="344.1099795" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-60.5567644 309.6382799) rotate(-16.9428535)"/>
+  <rect class="st13" x="1007.779479" y="370.689271" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-68.0162763 312.713261) rotate(-16.9428535)"/>
+  <rect class="st13" x="1014.9510938" y="397.2539671" width="16.0000001" height="28.0000002" rx="2" ry="2" transform="translate(-75.4464226 315.9562138) rotate(-16.9428535)"/>
+  <rect class="st20" x="380.40504" y="720.0161845" width="20.4394111" height="20.4394111"/>
+  <rect class="st27" x="850.40504" y="495.57174" width="20.4394111" height="20.4394111"/>
+  <rect class="st30" x="410.2224947" y="720.0161845" width="20.4394111" height="20.4394111"/>
+  <rect class="st28" x="620.2224947" y="460.0161845" width="20.4394111" height="20.4394111"/>
+  <rect class="st29" x="620.2224947" y="491.2184414" width="20.4394111" height="20.4394111"/>
+  <rect class="st26" x="625.6348211" y="522.0517748" width="20.4394111" height="20.4394111"/>
+  <rect class="st32" x="640.2355156" y="546.9649692" width="20.4394111" height="20.4394111"/>
+  <rect class="st33" x="648.8075642" y="581.2531636" width="20.4394111" height="20.4394111"/>
+  <rect class="st31" x="647.7051336" y="618.7965664" width="20.4394111" height="20.4394111"/>
+  <rect class="st25" x="631.9889878" y="652.4597609" width="20.4394111" height="20.4394111"/>
+  <rect class="st18" x="608.3084322" y="682.2253859" width="20.4394111" height="20.4394111"/>
+  <rect class="st16" x="572.9264878" y="698.0500386" width="20.4394111" height="20.4394111"/>
+  <rect class="st14" x="692.444717" y="426.6828511" width="20.4394111" height="20.4394111"/>
+  <rect class="st17" x="723.9855156" y="426.6828511" width="20.4394111" height="20.4394111"/>
+  <rect class="st15" x="754.8448906" y="426.6828511" width="20.4394111" height="20.4394111"/>
+  <rect class="st19" x="781.975967" y="426.6828511" width="20.4394111" height="20.4394111"/>
+  <g id="Laube_x5F_Terasse">
+    <polygon class="st12" points="516 190 860 190 860 405.2709351 684.5953369 405.8356323 685.1600342 440 516 440 516 190"/>
+  </g>
+  <path id="bed-wildbeet" class="st71" d="M912.8189692,323.9050293l70.366272-1.3707581,37.7991333,116.1492615-28.4923096-5.6835022-50-15-28-38-1.6731567-56.0949707.000061-.0000305Z"/>
+  <circle class="st70" cx="960.8456778" cy="401.289917" r="18"/>
+  <g class="st39">
+    <text class="st44" transform="translate(938.1723022 405.7651062)"><tspan x="0" y="0">Miniteich</tspan></text>
+  </g>
+  <path id="bed-beet1" class="st72" d="M497.629135,423.8874509l18.749883,17.088501h98.620982v53.2828671h-111.4866591l-37.2460278-33.5917203c-7.2517222-6.5402363-8.8166897-17.3180414-3.724545-25.6506417l4.1020798-6.7124942c6.6477846-10.878193,21.56185-13.0040494,30.9842871-4.4165118Z"/>
+  <path id="bed-schaukel" class="st74" d="M513,510.7292934h27.8779715l25.3028445,168.5540682c1.1692294,7.7887831-.2640821,15.7457367-4.077666,22.6369498l-.0000161.0000291c-6.302157,11.3881083-18.2912076,18.455829-31.306821,18.455829h-17.796313v-209.646876Z"/>
+  <rect id="bed-beet2" class="st73" x="652" y="453" width="146" height="40"/>
+  <rect id="bed-gemuese3" class="st77" x="871.2003755" y="721.6471565" width="84.1231689" height="40"/>
+  <rect class="st80" x="955.3236055" y="721.6471565" width="49.0756836" height="40"/>
+  <rect id="bed-erdbeeren" class="st81" x="1004.9712496" y="721.6471565" width="84.1231689" height="40"/>
+  <polygon id="bed-himbeeren" class="st84" points="1040.8572359 608.4200446 1062.8807955 607.2906501 1089.0944185 704.6549079 1066.268979 704.9845588 1040.8572359 608.4200446"/>
+  <rect id="bed-gemuese2" class="st82" x="871.2003755" y="652.9057421" width="84.1231689" height="40"/>
+  <rect id="bed-gemuese1" class="st85" x="871.2003755" y="582.4289083" width="84.1231689" height="40"/>
+  <g class="st39">
+    <text class="st41" transform="translate(552.3565674 477)"><tspan x="0" y="0">Beet</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(710.6065674 477)"><tspan x="0" y="0">Beet</tspan></text>
+  </g>
+  <rect id="bed-welcome" class="st83" x="436.0308403" y="698.4930296" width="79.4753723" height="21.7408447"/>
+  <g class="st39">
+    <text class="st41" transform="translate(481.6915131 716.4008656)"><tspan x="0" y="0">Beet</tspan></text>
+  </g>
+  <rect id="bed-tomaten" class="st79" x="685.3175659" y="406.1295166" width="132.5480347" height="14.9531555"/>
+  <g class="st39">
+    <text class="st41" transform="translate(715.1242065 417.9883423)"><tspan x="0" y="0">Tomatenbeet</tspan></text>
+  </g>
+  <polygon class="st75" points="978.723752 461.576689 978.723752 546.4913924 871.4771089 546.4913924 871.4771089 461.576689 978.723752 461.576689"/>
+  <g class="st39">
+    <text class="st41" transform="translate(878.9785767 605.4855957)"><tspan x="0" y="0">Gemüse 1</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(882.8892822 677.2126312)"><tspan x="0" y="0">Gemüse 2</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(882.8892822 746.5993057)"><tspan x="0" y="0">Gemüse 3</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(1021.7192383 746.5993057)"><tspan x="0" y="0">Erdbeeren</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(1051.5351775 616.6516932) rotate(74.6439512)"><tspan x="0" y="0">Herbsthimbeeren</tspan></text>
+  </g>
+  <g>
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <path class="st3" d="M261.2999878,107.6999969l-119.2999878,328.9000092-4.0587609,9.9836166c-14.6003364,35.913463-34.8460442,69.2629648-59.9712919,98.7869986l-29.4699472,34.6293787,126.1000061,188.9495941,3.6999969,3,217.4999847,34.7999878,34.2000122-3.0999756"/>
+  <polyline class="st4" points="261.2999878 107.6999969 142 436.6000061 115.9000015 500.7999878 77.1999969 552.5 48.5 580 174.6000061 768.9495941 178.3000031 771.9495941 395.7999878 806.7495819 430 803.6496063"/>
+  <line class="st8" x1="505" y1="797.2495819" x2="1137.5921016" y2="787.9495941"/>
+  <line class="st2" x1="505" y1="797.2495819" x2="1137.5921016" y2="787.9495941"/>
+  <polygon class="st0" points="115.9000015 500.7999878 77.1999969 552.5 48.5 580 49 582.5999756 174.6000061 768.9495941 178.3000031 771.9495941 395.7999878 806.7495819 501 797.3496185 1137.5921016 787.9495941 964.5921016 149.1999969 261.2999878 107.6999969 142 436.6000061 115.9000015 500.7999878"/>
+  <path id="bed-kraeuter" class="st76" d="M600,127.2999878l182.8539429,8.6832809.3764648,47.0587234-73.2304077-3.7420044-110-6v-46Z"/>
+  <ellipse class="st21" cx="601.2236328" cy="132.7647629" rx="9" ry="7"/>
+  <ellipse class="st21" cx="603.8588867" cy="147.0706177" rx="9" ry="7"/>
+  <ellipse class="st21" cx="608.3765259" cy="161.0999756" rx="9" ry="7"/>
+  <ellipse class="st21" cx="623.4353027" cy="169.0294037" rx="9" ry="7"/>
+  <ellipse class="st21" cx="638.4941406" cy="168.6764832" rx="9" ry="7"/>
+  <ellipse class="st21" cx="652.7999878" cy="135.5706329" rx="9" ry="7"/>
+  <ellipse class="st21" cx="646.3999634" cy="144.4058914" rx="9" ry="7"/>
+  <ellipse class="st21" cx="646.3999634" cy="156.0764618" rx="9" ry="7"/>
+  <ellipse class="st21" cx="660.3293457" cy="161.7470551" rx="9" ry="7"/>
+  <ellipse class="st21" cx="672.1529541" cy="161.6940918" rx="7" ry="5"/>
+  <ellipse class="st21" cx="683.3411865" cy="157.3235168" rx="8" ry="6"/>
+  <ellipse class="st21" cx="687.2471313" cy="149.9294376" rx="7" ry="5.0000057"/>
+  <ellipse class="st21" cx="685.3883667" cy="140.8706436" rx="8" ry="6"/>
+  <ellipse class="st21" cx="679.3648682" cy="135.4000549" rx="8" ry="6"/>
+  <ellipse class="st21" cx="737.7294922" cy="143.4412079" rx="10" ry="8"/>
+  <ellipse class="st21" cx="739.8825073" cy="154.9294128" rx="7" ry="5"/>
+  <ellipse class="st21" cx="747.7883301" cy="161.5294037" rx="7" ry="5"/>
+  <ellipse class="st21" cx="756.8236084" cy="167" rx="7" ry="5"/>
+  <ellipse class="st21" cx="743.6471558" cy="168.5823669" rx="7" ry="5"/>
+  <ellipse class="st21" cx="734.2354126" cy="173.1764832" rx="7" ry="5"/>
+  <ellipse class="st21" cx="722.1884155" cy="177.0175934" rx="7" ry="5"/>
+  <ellipse class="st21" cx="709.7648926" cy="177.4705505" rx="7" ry="5"/>
+  <ellipse class="st21" cx="708.635498" cy="177.0940857" rx="7" ry="5"/>
+  <ellipse class="st21" cx="698.4708252" cy="172.6529236" rx="7" ry="5"/>
+  <ellipse class="st21" cx="690.1884766" cy="165.6764526" rx="7" ry="5"/>
+  <ellipse class="st21" cx="769.2471313" cy="172.1940918" rx="7" ry="5"/>
+  <ellipse class="st21" cx="776.4000244" cy="172.7705841" rx="7" ry="5"/>
+  <ellipse class="st21" cx="781.2941895" cy="163.5588379" rx="7" ry="5"/>
+  <ellipse class="st21" cx="781.2941895" cy="155.2765045" rx="7" ry="5"/>
+  <ellipse class="st21" cx="781.2941895" cy="148.1235809" rx="7" ry="5"/>
+  <ellipse class="st21" cx="780.9176636" cy="142.7529678" rx="7" ry="5"/>
+  <ellipse class="st21" cx="780.9176636" cy="181.1528931" rx="7" ry="5"/>
+  <rect class="st58" x="605" y="230" width="238" height="175"/>
+  <line class="st10" x1="605" y1="317" x2="843" y2="317"/>
+  <rect class="st86" x="825" y="146.7999878" width="45" height="44"/>
+  <g class="st39">
+    <text class="st36" transform="translate(840.8561401 172.0999756)"><tspan x="0" y="0">K1</tspan></text>
+  </g>
+  <rect class="st86" x="870" y="148" width="45" height="44"/>
+  <g class="st39">
+    <text class="st36" transform="translate(885.8561401 172.0999756)"><tspan x="0" y="0">K2</tspan></text>
+  </g>
+  <rect class="st9" x="378.9250722" y="491.655037" width="117" height="175"/>
+  <line class="st1" x1="378.9250722" y1="574.8501443" x2="495.9250722" y2="574.8501443"/>
+  <circle class="st70" cx="1021.1353421" cy="462.7619019" r="17.9999988" transform="translate(400.7812422 1396.5856301) rotate(-80.7825329)"/>
+  <g class="st39">
+    <text class="st41" transform="translate(667.4449463 126.0999756)"><tspan x="0" y="0">Kräuter-Steinbeet</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st43" transform="translate(704.6768188 280)"><tspan x="0" y="0">Laube</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st46" transform="translate(413.2473984 609.2711182)"><tspan x="0" y="0">Schaukel</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(912.8664551 444.1844482)"><tspan x="0" y="0">Wildbeet/</tspan></text>
+    <text class="st41" transform="translate(912.8664551 457.3846436)"><tspan x="0" y="0">Schattenbeet</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(893.3178101 501.3531952)"><tspan x="0" y="0">Gewächshaus</tspan></text>
+  </g>
+  <g class="st39">
+    <text class="st44" transform="translate(991.7722168 467.4335938)"><tspan x="0" y="0">Regentonne</tspan></text>
+  </g>
+  <circle class="st70" cx="834.6796265" cy="421.2607117" r="14.2105713"/>
+  <g class="st39">
+    <text class="st44" transform="translate(808.55896 425.4865723)"><tspan x="0" y="0">Regentonne</tspan></text>
+  </g>
+  <circle class="st70" cx="978.5725679" cy="717.1577766" r="14.2105713"/>
+  <g class="st39">
+    <text class="st44" transform="translate(952.4518433 721.383604)"><tspan x="0" y="0">Wasser-</tspan></text>
+    <text class="st44" transform="translate(952.4518433 733.3836088)"><tspan x="0" y="0">anschluss</tspan></text>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+  <g class="st39">
+    <text class="st41" transform="translate(456.9354248 872)"><tspan x="0" y="0">Eingang</tspan></text>
+  </g>
+  <g>
+    <rect class="st59" x="60" y="875" width="42" height="5"/>
+    <rect class="st60" x="102" y="875" width="42" height="5"/>
+    <rect class="st59" x="144" y="875" width="42" height="5"/>
+    <rect class="st60" x="186" y="875" width="42" height="5"/>
+    <rect class="st59" x="228" y="875" width="42" height="5"/>
+    <g class="st39">
+      <text class="st45" transform="translate(60 895)"><tspan x="0" y="0">0</tspan></text>
+    </g>
+    <g class="st39">
+      <text class="st45" transform="translate(260.5785828 895)"><tspan x="0" y="0">5 m</tspan></text>
+    </g>
+  </g>
+  <line class="st11" x1="44" y1="739.1496063" x2="72" y2="711.1496063"/>
+  <path class="st87" d="M79,704.1496063l-15,5,10,10,5-15Z"/>
+  <g class="st39">
+    <text class="st50" transform="translate(86 707.1496086)"><tspan x="0" y="0">N</tspan></text>
+  </g>
+  <ellipse class="st21" cx="898.51123" cy="316.8172607" rx="10" ry="8"/>
+  <ellipse class="st21" cx="915.7001948" cy="318.9599304" rx="10" ry="8"/>
+  <ellipse class="st21" cx="931.6212764" cy="318.6461182" rx="10" ry="8"/>
+  <ellipse class="st21" cx="947.941772" cy="318.6461182" rx="10" ry="8"/>
+  <ellipse class="st21" cx="958.2145991" cy="318.8363037" rx="10" ry="8"/>
+  <ellipse class="st21" cx="973.9951663" cy="424.2901001" rx="10" ry="8"/>
+  <ellipse class="st21" cx="980.7637572" cy="386.964447" rx="10" ry="8"/>
+  <ellipse class="st21" cx="993.6580081" cy="405.6272888" rx="10" ry="8"/>
+  <ellipse class="st21" cx="996.5479617" cy="434.2015686" rx="10" ry="8"/>
+  
+  
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g>
+    <g class="st39">
+    </g>
+  </g>
+  <g class="st39">
+  </g>
+</g>
+          <g id="plants"></g>
+          <g id="labels"></g>
+          <g id="ghostLayer"></g>
+          </g>
+        </svg>
+      </div>
+      <div class="topbar">
+        <div class="seg" id="modeSeg" role="group" aria-label="Ansicht">
+          <button type="button" data-mode="all" aria-pressed="true">Bepflanzung</button>
+          <button type="button" data-mode="month" aria-pressed="false">Monat</button>
+          <button type="button" data-mode="art" aria-pressed="false">Arten</button>
+          <button type="button" data-mode="care" aria-pressed="false">Pflege</button>
+        </div>
+        <div class="chips months hidden" id="monthChips" role="group" aria-label="Monat"></div>
+        <div class="chips hidden" id="catChips" role="group" aria-label="Gruppe"></div>
+        <div class="chips hidden" id="speciesChips" role="group" aria-label="Art"></div>
+      </div>
+      <div class="mapctl">
+        <button type="button" id="zin" aria-label="Hineinzoomen">+</button>
+        <button type="button" id="zout" aria-label="Herauszoomen">−</button>
+        <button type="button" class="compass" id="compass" aria-label="Ausrichtung zurücksetzen (Norden wie im Grundriss)" title="Ausrichtung zurücksetzen"><svg viewBox="0 0 26 26" id="needle" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="currentColor" stroke-opacity=".25"/><path d="M13 3.5l3.6 9.5h-7.2z" fill="#C8424F"/><path d="M13 22.5l-3.6-9.5h7.2z" fill="currentColor" fill-opacity=".55"/></svg></button>
+        <button type="button" class="rotbtn" id="rotL" aria-label="Nach links drehen" title="Nach links drehen (oder Umschalt + Mausrad)">⟲</button>
+        <button type="button" class="rotbtn" id="rotR" aria-label="Nach rechts drehen" title="Nach rechts drehen (oder Umschalt + Mausrad)">⟳</button>
+        <div class="sep"></div>
+        <button type="button" class="txt" data-fit="all" title="Ganzer Garten">GARTEN</button>
+        <button type="button" class="txt" data-fit="bed" title="Staudenbeet">BEET</button>
+        <div class="sep"></div>
+        <button type="button" id="addBtn" aria-label="Pflanze hinzufügen" title="Pflanze hinzufügen" hidden>✚</button>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="banner" id="banner" role="status"><span id="bannerText"></span><button type="button" class="ghostbtn" id="bannerCancel">Abbrechen</button><button type="button" id="bannerOk">Fertig</button></div>
+    </section>
+
+    <section class="view" id="v-list" aria-label="Pflanzenliste">
+      <div class="scroll"><div class="wrap">
+        <input class="search" id="q" type="search" placeholder="Pflanze suchen, z. B. Funkie" aria-label="Pflanze suchen">
+        <div class="chips" id="filters" style="margin:10px 0 4px">
+          <button type="button" data-f="all" aria-pressed="true">Alle</button>
+          <button type="button" data-f="neu" aria-pressed="false">Neu geplant</button>
+          <button type="button" data-f="st" aria-pressed="false">Mit Stütze</button>
+          <button type="button" data-f="uns" aria-pressed="false">Zu prüfen</button>
+          <button type="button" data-f="nobloom" aria-pressed="false">Blüte unbekannt</button>
+        </div>
+        <div id="plist"></div>
+      </div></div>
+    </section>
+
+    <section class="view" id="v-todo" aria-label="Aufgaben">
+      <div class="scroll"><div class="wrap">
+        <div style="display:flex;justify-content:center;margin-bottom:10px"><div class="seg" id="todoSeg" role="group" aria-label="Liste">
+          <button type="button" data-t="plan" aria-pressed="true">Geplante ToDos</button>
+          <button type="button" data-t="rec" aria-pressed="false">Empfohlene Pflege</button>
+        </div></div>
+        <div class="mnav" id="mnav" hidden></div>
+        <div id="tlist"></div>
+      </div></div>
+    </section>
+
+    <section class="view" id="v-foto" aria-label="Fotos">
+      <div class="scroll"><div class="wrap">
+        <div class="ftop">
+          <div class="chips" id="areaChips" role="group" aria-label="Bereich"></div>
+          <button type="button" class="btn primary sm" id="fotoAdd" hidden>+ Fotos</button>
+        </div>
+        <div id="fgrid"></div>
+        <div class="meter" id="meter"></div>
+      </div></div>
+    </section>
+
+    <aside class="sheet" id="sheet" aria-label="Details">
+      <div class="grab"></div>
+      <button type="button" class="x" id="sheetClose" aria-label="Schließen">×</button>
+      <div class="inner" id="sheetBody"></div>
+    </aside>
+    <input type="file" id="fileIn" accept="image/*" multiple hidden>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="offline" id="offline" hidden>Offline · letzte gespeicherte Daten</div>
+  </main>
+  <nav class="tabs" aria-label="Bereiche">
+    <button type="button" data-v="plan" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>Plan</button>
+    <button type="button" data-v="list"><svg viewBox="0 0 24 24"><path d="M12 21c0-6 3-9 8-10-1 6-4 9-8 10zM12 21c0-5-2-8-7-9 0 5 3 8 7 9zM12 21V9"/><circle cx="12" cy="6" r="3"/></svg>Pflanzen</button>
+    <button type="button" data-v="todo"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 10l2 2 4-4M8 16h8"/></svg><span>Aufgaben<span class="badge" id="todoBadge" hidden></span></span></button>
+    <button type="button" data-v="foto"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>Fotos</button>
+  </nav>
+</div>
+
+<script src="vendor/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/backend.js"></script>
+<script>
+(() => {
+"use strict";
+const PX = 42;
+const MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const MSHORT = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const TYPES = {staude:"Staude", gehoelz:"Gehölz", gras:"Gras", zwiebel:"Zwiebelpflanze", objekt:"Objekt", platzhalter:"Platzhalter"};
+const TYPE_STYLE = {
+  staude:{fill:"#A6B14C",stroke:"#556B4B"}, gehoelz:{fill:"#79822F",stroke:"#556B4B"},
+  gras:{fill:"#D1D16D",stroke:"#8A8850"}, zwiebel:{fill:"#C3D3B3",stroke:"#556B4B"},
+  objekt:{fill:"#D5DEE3",stroke:"#8FA1AB"}, platzhalter:{fill:"#FFFFFF",stroke:"#2F5BD3"}
+};
+const BLOOM_COLORS = [["#F3F1EC","weiß"],["#EDB9CE","rosa"],["#FFA5DB","pink"],["#DD3C9C","magenta"],["#C64766","himbeerrot"],["#8E1857","weinrot"],
+  ["#BFA8D2","flieder"],["#B788E2","lila"],["#9450C9","violett"],["#542582","dunkelviolett"],["#8FA7DE","blau"],["#EFD36B","gelb"],["#E8A04B","orange"],["#D95A4F","rot"],["#D1D16D","gelbgrün"]];
+const LEAF_COLORS = [["#C3D3B3","hellgrün"],["#A6B14C","olivgrün"],["#79822F","dunkles Oliv"],["#526149","dunkelgrün"],["#9AADAB","blaugrün"],["#D1D16D","gelbgrün"],
+  ["#E3D36A","goldgelb"],["#C9DAB6","grün-weiß"],["#BAAFB8","silbergrau"],["#B8433F","rot"],["#2B1625","dunkelrot"],["#1E1614","schwarzrot"],["#55350F","braun"]];
+const LAUB = {ganzjaehrig:"ganzjährig belaubt", sommergruen:"sommergrün (kahl im Winter)", zieht_ein:"zieht im Winter ein"};
+const TASK = {schnitt:{n:"Schnitt",c:"#E07A2E"}, duengen:{n:"Düngen",c:"#8A6A3A"}, teilen:{n:"Teilen",c:"#9450C9"}, schutz:{n:"Winterschutz",c:"#5F8A9A"}, pflege:{n:"Pflege",c:"#C64766"}};
+const AREAS = {staudenbeet:"Staudenbeet", beet1:"Beet 1", beet2:"Beet 2", welcome:"Welcome-Beet", schaukel:"Gehölze an der Schaukel", wildbeet:"Wildbeet / Schattenbeet", kraeuter:"Kräuter-Steinbeet", tomaten:"Tomatenbeet", gemuese1:"Gemüse 1", gemuese2:"Gemüse 2", gemuese3:"Gemüse 3", erdbeeren:"Erdbeeren", himbeeren:"Herbsthimbeeren", gemuese:"Gemüsegarten allgemein", garten:"Garten allgemein"};
+const AREA_ORDER = ["staudenbeet","welcome","schaukel","beet1","beet2","wildbeet","kraeuter","tomaten","gemuese1","gemuese2","gemuese3","erdbeeren","himbeeren"];
+const CATS = {stauden:"Stauden", graeser:"Gräser", rosen:"Rosen", zier:"Ziergehölze", obst:"Obstgehölze", objekte:"Objekte", geplant:"Platzhalter"};
+const CARE_RULES = [[/blutgras/,"blutgras"],[/kletterrose/,"kletterrose"],[/kletterhortensie/,"kletterhortensie"],[/bauernhortensie/,"bauernhortensie"],
+  [/pfingstrose/,"pfingstrose"],[/witwenblume|knautia/,"witwenblume"],[/purpurglöckchen|heuchera/,"purpurgloeckchen"],[/indianernessel|monarda/,"indianernessel"],[/leinkraut|linaria/,"leinkraut"],[/nieswurz|christrose|lenzrose|helleborus/,"nieswurz"],[/rispenhortensie/,"rispenhortensie"],[/spalier/,"apfelspalier"],[/felsenbirne/,"felsenbirne"],[/blasenspiere/,"blasenspiere"],[/zwerg-?blutpflaume/,"zwergblutpflaume"],[/blutpflaume/,"blutpflaume"],[/blutweiderich/,"blutweiderich"],[/hasel/,"hasel"],[/schlehe/,"schlehe"],[/korkspindel/,"korkspindel"],[/mandel/,"mandelbaeumchen"],[/heide/,"schneeheide"],[/birne|nashi/,"birne"],[/weide/,"weide"],[/rose/,"rose"],[/funkie/,"funkie"],[/frauenmantel/,"frauenmantel"],[/aster/,"aster"],[/lavendel/,"lavendel"],
+  [/sommerflieder/,"sommerflieder"],[/stachelbeere/,"stachelbeere"],[/prachtspiere/,"prachtspiere"],[/grasnelke/,"grasnelke"],[/fingerhut/,"fingerhut"],
+  [/efeu/,"efeu"],[/holunder/,"saeulenholunder"],[/blutweiderich/,"blutweiderich"],[/bergminze/,"bergminze"],[/geißbart/,"waldgeissbart"],
+  [/apfel/,"apfel"],[/herbstanemone/,"herbstanemone"],[/kirsche/,"kirsche"],[/prachtkerze/,"prachtkerze"],[/blutpflaume/,"zwergblutpflaume"],
+  [/eukalyptus/,"eukalyptus"],[/salbei/,"salbei"],[/spier/,"spierstrauch"],[/wiesenraute/,"wiesenraute"],[/sonnenhut|echinacea/,"sonnenhut"],
+  [/malve/,"malve"],[/lupine/,"lupine"],[/schneeball/,"schneeball"],[/vogeltränke/,"vogeltraenke"],[/wasserspiel/,"wasserspiel"],[/gras/,"gras"]];
+const CAT_OF = {birne:"obst",apfelspalier:"obst",hasel:"obst",rose:"rosen",kletterrose:"rosen",gras:"graeser",blutgras:"graeser",apfel:"obst",stachelbeere:"obst",kirsche:"obst",vogeltraenke:"objekte",wasserspiel:"objekte"};
+
+const $ = s => document.querySelector(s);
+const svg = $("#plan"), gPlants = $("#plants"), gLabels = $("#labels"), gGhost = $("#ghostLayer");
+const bedPath = document.getElementById("bed-staudenbeet");
+const NS = "http://www.w3.org/2000/svg";
+const nowM = new Date().getMonth()+1, YEAR = new Date().getFullYear();
+
+const state = { plants:new Map(), todos:new Map(), care:new Map(), fotos:new Map(), sel:null, mode:"view",
+  view:"all", month:nowM, cat:null, species:null, canWrite:null, db:null, assets:null,
+  filter:"all", q:"", pendingNew:null, tMonth:nowM, tTab:"plan", area:"all", upload:null };
+
+/* ---------- Hilfen ---------- */
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),2400); }
+function darken(hex, f=.55){ const n=parseInt(hex.slice(1),16); const m=v=>Math.round(v*f).toString(16).padStart(2,"0"); return "#"+m((n>>16)&255)+m((n>>8)&255)+m(n&255); }
+function fmtLen(cm){ return cm >= 100 ? (cm/100).toLocaleString("de-DE",{maximumFractionDigits:2})+" m" : Math.round(cm)+" cm"; }
+function sorteTxt(p){ return p.sorte ? (p.sorte.length > 14 || /Stämmchen/.test(p.sorte) ? p.sorte : "‚"+p.sorte+"‘") : ""; }
+function inBed(x,y){ try{ const pt=svg.createSVGPoint(); pt.x=x; pt.y=y; return bedPath && bedPath.isPointInFill(pt); }catch(e){ return false; } }
+function areaAt(x,y){ const pt=svg.createSVGPoint(); pt.x=x; pt.y=y;
+  for (const k of AREA_ORDER){ const el=document.getElementById("bed-"+k); try{ if(el && el.isPointInFill(pt)) return k; }catch(e){} }
+  return "garten"; }
+function colorName(hex, list){ const f=[...list].find(c=>c[0].toLowerCase()===String(hex).toLowerCase()); return f?f[1]:""; }
+function monthRange(ms){
+  if(!ms || !ms.length) return "";
+  const s=[...ms].sort((a,b)=>a-b), parts=[]; let st=s[0], pr=s[0];
+  for(let i=1;i<=s.length;i++){ const v=s[i]; if(v===pr+1){ pr=v; continue; } parts.push(st===pr?MSHORT[st-1]:MSHORT[st-1]+"–"+MSHORT[pr-1]); st=v; pr=v; }
+  return parts.join(", ");
+}
+function careKeyFor(p){ if(p.pflege) return p.pflege; const n=(p.name||"").toLowerCase(); const r=CARE_RULES.find(([re])=>re.test(n)); return r?r[1]:null; }
+function spec(p){ const k=careKeyFor(p); return k ? state.care.get(k) : null; }
+function catOf(p){
+  if (p.typ==="platzhalter") return "geplant";
+  if (p.typ==="objekt") return "objekte";
+  const k=careKeyFor(p);
+  if (/zier/i.test(p.name||"")) return "zier";
+  if (k && CAT_OF[k]) return CAT_OF[k];
+  if (p.typ==="gras") return "graeser";
+  if (p.typ==="gehoelz") return "zier";
+  return "stauden";
+}
+function speciesLabel(p){ const c=spec(p); return c ? c.titel.replace(/\s*\(.*\)$/,"") : (p.name||"Ohne Namen"); }
+function speciesKey(p){ return careKeyFor(p) || ("n:"+(p.name||"").toLowerCase()); }
+
+/* Blüte und Laub: eigener Wert der Pflanze vor Artwert; alte Felder (farbe) werden gelesen */
+function legacyLeaf(p){ return p.farbe && /Laub/i.test(p.farbname||"") ? p.farbe : null; }
+function legacyBloom(p){ return p.farbe && !/Laub/i.test(p.farbname||"") ? p.farbe : null; }
+function bloomMonths(p){ if (Array.isArray(p.bluehmonate)) return p.bluehmonate; const c=spec(p); return c&&c.bluete ? c.bluete.m||[] : []; }
+function bloomMonthsOwn(p){ return Array.isArray(p.bluehmonate); }
+function bloomColor(p){ const c=spec(p); return p.bluetenfarbe || legacyBloom(p) || (c&&c.bluete&&c.bluete.farbe) || null; }
+function leafColor(p){ const c=spec(p); return p.laubfarbe || legacyLeaf(p) || (c&&c.laubfarbe) || (TYPE_STYLE[p.typ]||TYPE_STYLE.staude).fill; }
+function leafType(p){ const c=spec(p); return p.laub || (c&&c.laub) || (p.typ==="gehoelz"?"sommergruen":"zieht_ein"); }
+function leafyIn(p,m){ const t=leafType(p); return t==="ganzjaehrig" || (m>=4 && m<=10); }
+function careTasksOf(p,m){ const c=spec(p); return c ? c.aufgaben.filter(a=>a.m.includes(m)) : []; }
+
+/* ---------- Darstellung je Ansicht ---------- */
+function paint(p){
+  const isNew = p.status==="neu" || p.typ==="platzhalter";
+  const base = TYPE_STYLE[p.typ] || TYPE_STYLE.staude;
+  if (p.typ==="objekt") return {fill:base.fill, op:.95, stroke:base.stroke, dash:null, dim:state.view==="art"&&!artMatch(p)};
+  if (state.view==="all"){
+    if (isNew) return {fill:bloomColor(p)||"#FFFFFF", op:.5, stroke:"#2F5BD3", dash:"4 3"};
+    const f = p.typ==="gehoelz" ? leafColor(p) : (bloomColor(p) || leafColor(p));
+    return {fill:f, op:.92, stroke:darken(f)};
+  }
+  if (state.view==="month"){
+    const m=state.month;
+    if (isNew) return {fill:"none", op:0, stroke:"#2F5BD3", dash:"4 3"};
+    if (bloomMonths(p).includes(m)){ const b=bloomColor(p); return b ? {fill:b, op:.95, stroke:darken(b)} : {fill:"url(#stripe)", op:1, stroke:"#556B4B"}; }
+    if (leafyIn(p,m)){ const l=leafColor(p); return {fill:l, op:.85, stroke:darken(l)}; }
+    if (leafType(p)==="sommergruen") return {fill:"#E9E2D6", op:.35, stroke:"#8A6A3A", dash:"3 3"};
+    return {fill:"none", op:0, stroke:"#8D988F", dash:"1.5 3"};
+  }
+  if (state.view==="art"){
+    const f = bloomColor(p) || leafColor(p);
+    return artMatch(p) ? {fill:f, op:.95, stroke:"#172918", sw:2.2} : {fill:f, op:.9, stroke:darken(f), dim:true};
+  }
+  if (state.view==="care"){
+    const t = isNew ? [] : careTasksOf(p, state.month);
+    if (t.length){ const c=TASK[t[0].typ].c; return {fill:c, op:.9, stroke:darken(c), sw:t.length>1?2.4:1.2}; }
+    const f = bloomColor(p) || leafColor(p);
+    return {fill:f, op:.9, stroke:darken(f), dim:true};
+  }
+}
+function artMatch(p){
+  if (!state.cat && !state.species) return true;
+  if (state.species) return speciesKey(p)===state.species;
+  return catOf(p)===state.cat;
+}
+
+/* ---------- Zoom, Drehen & Verschieben ---------- */
+let vb = {x:0,y:0,w:1440,h:900};
+const world = document.getElementById("world");
+const ROT_C = {x:600, y:460};            // Drehpunkt: Gartenmitte
+const NORTH = 45;                         // Nordpfeil im Grundriss: 45° rechts von oben
+let rot = 0, lastRot = null;
+const baseTexts = [...svg.querySelectorAll(".base text")].map(t=>[t, t.getAttribute("transform")||""]);
+function rotPt(p, deg){ const a=deg*Math.PI/180, dx=p.x-ROT_C.x, dy=p.y-ROT_C.y;
+  return {x:ROT_C.x+dx*Math.cos(a)-dy*Math.sin(a), y:ROT_C.y+dx*Math.sin(a)+dy*Math.cos(a)}; }
+function normDeg(d){ d%=360; if(d>180) d-=360; if(d<=-180) d+=360; return d; }
+function applyVB(){
+  svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  const scale = Math.min(svg.clientWidth / vb.w, svg.clientHeight / vb.h) || 1;
+  svg.classList.toggle("labels", scale > 2.1);
+  const fs = 12 / scale;
+  gLabels.setAttribute("font-size", fs.toFixed(2));
+  gLabels.setAttribute("stroke-width", (3/scale).toFixed(2));
+  const r0 = Math.round(rot*100)/100;
+  gLabels.querySelectorAll("text").forEach(t=>{ const r=+t.dataset.r, x=+t.dataset.x, y=+t.dataset.cy + Math.min(r*0.35, fs*0.35);
+    t.setAttribute("y", y.toFixed(1)); if (r0) t.setAttribute("transform", `rotate(${-r0} ${x} ${y.toFixed(1)})`); else t.removeAttribute("transform"); });
+  if (lastRot !== r0){
+    lastRot = r0;
+    if (r0) world.setAttribute("transform", `rotate(${r0} ${ROT_C.x} ${ROT_C.y})`); else world.removeAttribute("transform");
+    baseTexts.forEach(([t,o])=>{ if (r0) t.setAttribute("transform", (o+` rotate(${-r0})`).trim()); else if (o) t.setAttribute("transform", o); else t.removeAttribute("transform"); });
+    $("#needle").style.transform = `rotate(${NORTH + r0}deg)`;
+    $("#compass").classList.toggle("turned", Math.abs(r0) > .5);
+  }
+}
+function fit(box, pad=.08){
+  const W=svg.clientWidth||1, H=svg.clientHeight||1, ar=W/H;
+  let w=box.w*(1+pad*2), h=box.h*(1+pad*2);
+  if (w/h < ar) w = h*ar; else h = w/ar;
+  vb = {x: box.x + box.w/2 - w/2, y: box.y + box.h/2 - h/2, w, h}; applyVB();
+}
+function fitWorld(box, pad){
+  if (!rot) return fit(box, pad);
+  const cs=[[box.x,box.y],[box.x+box.w,box.y],[box.x,box.y+box.h],[box.x+box.w,box.y+box.h]].map(([x,y])=>rotPt({x,y},rot));
+  const xs=cs.map(c=>c.x), ys=cs.map(c=>c.y);
+  fit({x:Math.min(...xs), y:Math.min(...ys), w:Math.max(...xs)-Math.min(...xs), h:Math.max(...ys)-Math.min(...ys)}, pad);
+}
+function fitAll(){ fitWorld({x:30,y:60,w:1140,h:840},.02); }
+function fitBed(){ const b=bedPath.getBBox(); fitWorld({x:b.x,y:b.y-30,w:b.width,h:b.height+30},.04); }
+function toSvg(cx, cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function toWorld(cx, cy){ return rot ? rotPt(toSvg(cx,cy), -rot) : toSvg(cx,cy); }
+function rotateAt(deg, cx, cy){
+  if (cx==null){ const r=svg.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; }
+  const before=toSvg(cx,cy), w=toWorld(cx,cy);
+  rot = normDeg(rot + deg);
+  const after=rotPt(w, rot); vb.x += after.x-before.x; vb.y += after.y-before.y; applyVB();
+}
+let rotAnim=null;
+function resetRotation(){
+  if (!rot) return; cancelAnimationFrame(rotAnim);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches){ rotateAt(-rot); return; }
+  const start=rot, t0=performance.now(), dur=380;
+  const step=t=>{ const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3), target=start*(1-e);
+    rotateAt(target-rot); if (k<1) rotAnim=requestAnimationFrame(step); else if (rot) rotateAt(-rot); };
+  rotAnim=requestAnimationFrame(step);
+}
+function zoomAt(f, cx, cy){
+  const p = cx==null ? {x:vb.x+vb.w/2, y:vb.y+vb.h/2} : toSvg(cx,cy);
+  const nw = Math.min(2200, Math.max(40, vb.w / f)); const k = vb.w / nw;
+  vb = {x: p.x - (p.x - vb.x)/k, y: p.y - (p.y - vb.y)/k, w: nw, h: vb.h/k}; applyVB();
+}
+function zoomTo(p){ const d=Math.max((p.d||.5),.5)*PX; const w=Math.max(220,d*8); const c=rotPt({x:p.x*PX,y:p.y*PX},rot); fit({x:c.x-w/2, y:c.y-w/2*0.62, w, h:w*0.62},0); }
+const wrap = $("#planWrap"); const ptrs = new Map(); let gesture = null;
+wrap.addEventListener("pointerdown", e => {
+  try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY});
+  const plantEl = e.target.closest && e.target.closest(".plant");
+  if (ptrs.size === 1){
+    gesture = (state.mode==="move" && plantEl && plantEl.dataset.id===state.sel) ? {type:"drag"} : {type:"pan", plantId: plantEl ? plantEl.dataset.id : null, moved:false};
+  } else if (ptrs.size === 2){
+    const [a,b]=[...ptrs.values()]; gesture = {type:"pinch", dist: Math.hypot(a.x-b.x,a.y-b.y), mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}, ang: Math.atan2(b.y-a.y,b.x-a.x), acc:0, turning:false};
+  }
+});
+wrap.addEventListener("pointermove", e => {
+  const p = ptrs.get(e.pointerId); if (!p || !gesture) return;
+  const prev = {x:p.x, y:p.y}; p.x=e.clientX; p.y=e.clientY;
+  if (gesture.type==="pan"){
+    if (Math.hypot(p.x-p.sx,p.y-p.sy) > 6) gesture.moved = true;
+    if (!gesture.moved) return;
+    wrap.classList.add("dragging");
+    const a=toSvg(prev.x,prev.y), b=toSvg(p.x,p.y); vb.x -= b.x-a.x; vb.y -= b.y-a.y; applyVB();
+  } else if (gesture.type==="drag"){
+    const s = toWorld(p.x,p.y); const pl = state.plants.get(state.sel);
+    if (pl){ pl._x = s.x/PX; pl._y = s.y/PX; drawPlant(state.sel); }
+  } else if (gesture.type==="pinch" && ptrs.size===2){
+    const [a,b]=[...ptrs.values()]; const dist=Math.hypot(a.x-b.x,a.y-b.y); const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    zoomAt(dist/gesture.dist, mid.x, mid.y);
+    const s1=toSvg(gesture.mid.x,gesture.mid.y), s2=toSvg(mid.x,mid.y); vb.x -= s2.x-s1.x; vb.y -= s2.y-s1.y; applyVB();
+    const ang=Math.atan2(b.y-a.y,b.x-a.x), d=normDeg((ang-gesture.ang)*180/Math.PI); gesture.ang=ang;
+    if (gesture.turning) rotateAt(d, mid.x, mid.y);
+    else { gesture.acc+=d; if (Math.abs(gesture.acc)>12){ gesture.turning=true; rotateAt(gesture.acc, mid.x, mid.y); } }
+    gesture.dist=dist; gesture.mid=mid;
+  }
+});
+function endPtr(e){
+  const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); wrap.classList.remove("dragging");
+  if (!gesture) return;
+  if (gesture.type==="pan" && !gesture.moved && p) onTap(gesture.plantId, p.x, p.y);
+  if (ptrs.size===0) gesture=null; else if (ptrs.size===1 && gesture.type==="pinch") gesture={type:"pan",moved:true};
+}
+wrap.addEventListener("pointerup", endPtr); wrap.addEventListener("pointercancel", endPtr);
+wrap.addEventListener("wheel", e => { e.preventDefault(); if (e.shiftKey || e.altKey){ rotateAt((e.deltaY||e.deltaX)*0.15, e.clientX, e.clientY); return; } zoomAt(Math.exp(-e.deltaY*0.0015), e.clientX, e.clientY); }, {passive:false});
+wrap.addEventListener("dblclick", e => zoomAt(1.8, e.clientX, e.clientY));
+$("#zin").onclick = () => zoomAt(1.5); $("#zout").onclick = () => zoomAt(1/1.5);
+$("#compass").onclick = () => resetRotation();
+$("#rotL").onclick = () => rotateAt(-15); $("#rotR").onclick = () => rotateAt(15);
+document.querySelectorAll(".mapctl [data-fit]").forEach(b => b.onclick = () => b.dataset.fit==="bed" ? fitBed() : fitAll());
+window.addEventListener("resize", () => applyVB());
+function onTap(plantId, cx, cy){
+  if (state.mode==="add"){
+    const s = toWorld(cx,cy);
+    state.pendingNew = Object.assign({name:"", typ:"staude", status:"bestand", stuetze:false, d:.5}, state.template||{}, {x:+(s.x/PX).toFixed(2), y:+(s.y/PX).toFixed(2), beet: areaAt(s.x,s.y)});
+    state.template=null;
+    setMode("view"); drawGhost(); openEdit(null); return;
+  }
+  if (state.mode==="move") return;
+  if (state.mode==="pick"){ if(plantId){ state.pick.has(plantId)?state.pick.delete(plantId):state.pick.add(plantId); drawPlant(plantId); pickBanner(); } return; }
+  if (plantId) select(plantId); else closeSheet();
+}
+
+/* ---------- Ansichts-Steuerung ---------- */
+function renderControls(){
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.mode===state.view)));
+  const mc=$("#monthChips"), cc=$("#catChips"), sc=$("#speciesChips");
+  mc.classList.toggle("hidden", !(state.view==="month"||state.view==="care"));
+  cc.classList.toggle("hidden", state.view!=="art");
+  sc.classList.toggle("hidden", state.view!=="art" || !state.cat);
+  mc.innerHTML = MSHORT.map((s,i)=>`<button type="button" data-m="${i+1}" aria-pressed="${state.month===i+1}" class="${i+1===nowM?"now":""}">${s}</button>`).join("");
+  if (state.view==="art"){
+    const counts={}; state.plants.forEach(p=>{ const c=catOf(p); counts[c]=(counts[c]||0)+1; });
+    cc.innerHTML = `<button type="button" data-cat="" aria-pressed="${!state.cat}">Alle</button>` +
+      Object.entries(CATS).filter(([k])=>counts[k]).map(([k,v])=>`<button type="button" data-cat="${k}" aria-pressed="${state.cat===k}">${v}<span class="n">${counts[k]}</span></button>`).join("");
+    if (state.cat){
+      const sp=new Map(); state.plants.forEach(p=>{ if(catOf(p)!==state.cat) return; const k=speciesKey(p); const o=sp.get(k)||{label:speciesLabel(p),n:0}; o.n++; sp.set(k,o); });
+      sc.innerHTML = [...sp.entries()].sort((a,b)=>a[1].label.localeCompare(b[1].label,"de")).map(([k,o])=>`<button type="button" data-sp="${esc(k)}" aria-pressed="${state.species===k}">${esc(o.label)}<span class="n">${o.n}</span></button>`).join("");
+    }
+  }
+  renderLegend();
+}
+function renderLegend(){
+  const L=$("#legend"); const m=MONTHS[state.month-1];
+  if (state.view==="all") L.innerHTML = `<span><i style="background:#FFA5DB"></i>Stauden: Blütenfarbe</span><span><i style="background:#79822F"></i>Gehölze: Laubfarbe</span><span><i class="lg-neu"></i>Neu geplant</span><span><i class="lg-st"></i>braucht Stütze</span>`;
+  else if (state.view==="month"){
+    let bloom=0, green=0, gap=0; state.plants.forEach(p=>{ if(p.typ==="objekt"||p.typ==="platzhalter"||p.status==="neu") return; if(bloomMonths(p).includes(state.month)) bloom++; else if(leafyIn(p,state.month)) green++; else gap++; });
+    L.innerHTML = `<b>${m}</b><span><i style="background:#FFA5DB"></i>blüht (${bloom})</span><span><i class="lg-stripe"></i>blüht, Farbe offen</span><span><i style="background:#79822F"></i>grün (${green})</span><span><i class="lg-kahl"></i>kahl</span><span><i class="lg-ein"></i>eingezogen (${gap} ohne Laub)</span>`;
+  }
+  else if (state.view==="art") L.innerHTML = state.cat||state.species ? `<span>Hervorgehoben: <b>${esc(state.species ? ($("#speciesChips [aria-pressed=true]")?.firstChild?.textContent||"") : CATS[state.cat])}</b></span>` : `<span>Gruppe wählen, um sie hervorzuheben</span>`;
+  else if (state.view==="care"){
+    const cnt={}; state.plants.forEach(p=>{ if(p.status==="neu"||p.typ==="platzhalter") return; const t=careTasksOf(p,state.month); if(t.length) cnt[t[0].typ]=(cnt[t[0].typ]||0)+1; });
+    const keys=Object.keys(cnt);
+    L.innerHTML = `<b>${m}</b>` + (keys.length ? keys.map(k=>`<span><i style="background:${TASK[k].c}"></i>${TASK[k].n} (${cnt[k]})</span>`).join("") : `<span>keine Pflege fällig</span>`);
+  }
+}
+$("#modeSeg").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.view=b.dataset.mode; if(state.view!=="art"){ state.cat=null; state.species=null; } renderControls(); drawAll(); };
+$("#monthChips").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.month=+b.dataset.m; renderControls(); drawAll(); };
+$("#catChips").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.cat=b.dataset.cat||null; state.species=null; renderControls(); drawAll(); };
+$("#speciesChips").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.species = state.species===b.dataset.sp ? null : b.dataset.sp; renderControls(); drawAll(); };
+
+/* ---------- Zeichnen ---------- */
+function drawAll(){
+  gPlants.textContent=""; gLabels.textContent="";
+  [...state.plants.values()].sort((a,b)=>(b.d||0)-(a.d||0)).forEach(p => drawPlant(p.id, true));
+  applyVB();
+}
+function drawPlant(id, fresh){
+  const p = state.plants.get(id); if (!p) return;
+  const x=(p._x ?? p.x)*PX, y=(p._y ?? p.y)*PX, r=Math.max(.25,(p.d||.5))/2*PX;
+  let g = fresh ? null : gPlants.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  if (!g){
+    g = document.createElementNS(NS,"g"); g.dataset.id=id; g.setAttribute("class","plant");
+    g.innerHTML = `<ellipse class="ring"/><ellipse class="body"/><circle class="stk"/><title></title>`;
+    gPlants.appendChild(g);
+    const t=document.createElementNS(NS,"text"); t.dataset.id=id; t.setAttribute("text-anchor","middle"); gLabels.appendChild(t);
+  }
+  const st = paint(p);
+  g.classList.toggle("sel", state.sel===id || (state.mode==="pick" && !!state.pick && state.pick.has(id)));
+  g.style.opacity = st.dim ? .18 : 1;
+  const ring=g.querySelector(".ring"), body=g.querySelector(".body"), stk=g.querySelector(".stk");
+  const rx = p.b ? p.b/2*PX : r, ry = r;
+  body.setAttribute("cx",x); body.setAttribute("cy",y); body.setAttribute("rx",rx); body.setAttribute("ry",ry);
+  body.setAttribute("fill",st.fill); body.setAttribute("fill-opacity",st.op);
+  body.setAttribute("stroke",st.stroke); body.setAttribute("stroke-width",st.sw||(st.dash?1.5:1.1));
+  if (st.dash) body.setAttribute("stroke-dasharray",st.dash); else body.removeAttribute("stroke-dasharray");
+  ring.setAttribute("cx",x); ring.setAttribute("cy",y); ring.setAttribute("rx",rx+2.2); ring.setAttribute("ry",ry+2.2); ring.setAttribute("fill","none");
+  if (p.stuetze && state.view==="all"){ stk.setAttribute("cx",x+r*.7); stk.setAttribute("cy",y-r*.7); stk.setAttribute("r",Math.max(1.6,r*.16)); stk.setAttribute("fill","#C8424F"); stk.style.display=""; }
+  else stk.style.display="none";
+  g.querySelector("title").textContent = p.name + (p.sorte ? " "+p.sorte : "");
+  const t = gLabels.querySelector(`text[data-id="${CSS.escape(id)}"]`);
+  if (t){ t.setAttribute("x",x); t.dataset.x=x; t.dataset.cy=y; t.dataset.r=r; t.textContent=(p.name||"Ohne Namen")+(p.unsicher?" ?":""); t.classList.toggle("dim", !!st.dim); }
+}
+function drawGhost(){
+  gGhost.textContent=""; const p=state.pendingNew; if(!p) return;
+  const c=document.createElementNS(NS,"circle"); c.setAttribute("class","ghost"); c.setAttribute("cx",p.x*PX); c.setAttribute("cy",p.y*PX); c.setAttribute("r",(p.d||.5)/2*PX); gGhost.appendChild(c);
+}
+
+/* ---------- Blatt ---------- */
+function select(id, zoom){ const prev=state.sel; state.sel=id; if(prev) drawPlant(prev); drawPlant(id); if(zoom) zoomTo(state.plants.get(id)); openDetail(id); }
+function openSheet(html){ $("#sheetBody").innerHTML=html; $("#sheet").classList.add("on"); $(".app").classList.add("sheet-open"); $("#sheet .inner").scrollTop=0; }
+function closeSheet(){ state.openTodo=null; $("#sheet").classList.remove("on"); $(".app").classList.remove("sheet-open"); const prev=state.sel; state.sel=null; if(prev) drawPlant(prev); state.pendingNew=null; drawGhost(); }
+$("#sheetClose").onclick = () => { if(state.mode==="move") cancelMove(); closeSheet(); };
+
+function plantFotos(id){ return [...state.fotos.values()].filter(f=>f.plantId===id).sort((a,b)=>String(b.datum).localeCompare(String(a.datum))); }
+function openDetail(id){
+  const p=state.plants.get(id); if(!p) return;
+  const c=spec(p), w=canWrite();
+  const bm=bloomMonths(p), bc=bloomColor(p), lc=leafColor(p);
+  const facts=[["Art", esc(TYPES[p.typ]||"Pflanze")]];
+  if (p.hoehe) facts.push(["Höhe", fmtLen(p.hoehe)]);
+  if (p.d) facts.push([p.b?"Maße":"Durchmesser", p.b ? Math.round(p.b*100)+" × "+Math.round(p.d*100)+" cm" : Math.round(p.d*100)+" cm"]);
+  if (p.typ!=="objekt"){
+    facts.push(["Blüte", bm.length ? `${bc?`<span class="sw" style="background:${esc(bc)}"></span>${esc(colorName(bc,BLOOM_COLORS)||"Farbe")}`:`<span class="inh">Farbe offen</span>`} · ${monthRange(bm)}${bloomMonthsOwn(p)?"":` <span class="inh">(Artwert)</span>`}` : `<span class="inh">keine Angabe</span>`]);
+    facts.push(["Laub", `<span class="sw" style="background:${esc(lc)}"></span>${esc(colorName(lc,LEAF_COLORS)||"grün")} · ${esc(LAUB[leafType(p)])}`]);
+  }
+  facts.push(["Bereich", esc(AREAS[p.beet]||"–")]);
+  const fotos=plantFotos(id);
+  openSheet(`
+    <h2 class="p-name">${esc(p.name||"Ohne Namen")}</h2>
+    ${p.sorte?`<div class="p-sorte">${esc(sorteTxt(p))}</div>`:""}
+    ${p.botanisch&&p.botanisch!==p.name?`<div class="p-bot">${esc(p.botanisch)}</div>`:""}
+    <div class="tags"><span class="tag ${p.status==="neu"?"neu":""}">${p.status==="neu"?"Neu geplant":"Bestand"}</span>${p.stuetze?`<span class="tag st">braucht Stütze</span>`:""}${p.unsicher?`<span class="tag unsicher">Angaben unsicher</span>`:""}</div>
+    <dl class="facts">${facts.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
+    ${p.notiz?`<div class="note">${esc(p.notiz)}</div>`:""}
+    ${w?`<div class="actions"><button class="btn primary" id="bEdit">Bearbeiten</button><button class="btn" id="bMove">Verschieben</button><button class="btn" id="bTodo">+ ToDo</button></div>`:""}
+    <div class="block"><h3><span class="grow">Fotos</span>${state.assets?`<button class="btn sm" id="bFoto">+ Foto</button>`:""}</h3>
+      ${fotos.length?`<div class="thumbs">${fotos.map(f=>`<button type="button" data-foto="${esc(f.id)}"><img src="${esc(KG.blobUrl(f.asset))}" alt="${esc(p.name)}" loading="lazy"></button>`).join("")}</div>`:`<div class="muted">Noch keine Fotos.</div>`}
+    </div>
+    ${careHtml(p)}`);
+  if (w){ $("#bEdit").onclick=()=>openEdit(id); $("#bMove").onclick=()=>startMove(id); $("#bTodo").onclick=()=>openTodoEdit(null,{plantIds:[id], titel:p.name||""}); }
+  if ($("#bFoto")) $("#bFoto").onclick=()=>pickFotos({plantId:id, bereich:p.beet||"staudenbeet"});
+  $("#sheetBody").querySelectorAll("[data-foto]").forEach(b=>b.onclick=()=>openFoto(b.dataset.foto));
+}
+function careHtml(p){
+  const c=spec(p);
+  if(!c||!c.aufgaben) return `<div class="block"><h3>Pflege</h3><div class="muted">Für diese Pflanze sind noch keine Pflegehinweise hinterlegt.</div></div>`;
+  const byM={}; c.aufgaben.forEach(a=>a.m.forEach(m=>{ (byM[m] ||= new Set()).add(a.typ); }));
+  const months=MSHORT.map((s,i)=>{ const set=byM[i+1]; return `<span class="${set?"on":""} ${i+1===nowM?"now":""}" title="${MONTHS[i]}">${s}${set?`<i>${[...set].map(ty=>`<b style="background:${TASK[ty].c}"></b>`).join("")}</i>`:""}</span>`; }).join("");
+  const tasks=[...c.aufgaben].sort((a,b)=>a.m[0]-b.m[0]).map(a=>`<li><span class="when">${monthRange(a.m)}</span><span><span class="ttag" style="color:${TASK[a.typ].c}">${TASK[a.typ].n}</span>${esc(a.text)}</span></li>`).join("");
+  return `<div class="block"><h3>Pflege</h3><div class="months">${months}</div><ul class="tasks">${tasks}</ul>
+    ${(c.hinweise||[]).length?`<ul class="hints">${c.hinweise.map(h=>`<li>${esc(h)}</li>`).join("")}</ul>`:""}
+    <div class="muted" style="margin-top:10px">Allgemeine Hinweise für ${esc(c.titel)}. Sorte und Standort können abweichen.</div></div>`;
+}
+
+function swatchRow(id, list, cur){
+  return `<div class="swatches" id="${id}"><button type="button" class="none" data-c="" aria-pressed="${!cur}" aria-label="keine / Standard" title="keine / Standard"></button>` +
+    list.map(([c,n])=>`<button type="button" data-c="${c}" style="background:${c}" aria-label="${esc(n)}" title="${esc(n)}" aria-pressed="${String(cur||"").toLowerCase()===c.toLowerCase()}"></button>`).join("")+`</div>`;
+}
+function openEdit(id){
+  const isNew=!id; const p = isNew ? state.pendingNew : {...state.plants.get(id)}; if(!p) return;
+  const c=spec(p);
+  let bc = p.bluetenfarbe || legacyBloom(p) || "", lc = p.laubfarbe || legacyLeaf(p) || "";
+  let bm = bloomMonthsOwn(p) ? [...p.bluehmonate] : null;
+  const defBm = c&&c.bluete ? c.bluete.m||[] : [];
+  const defLeaf = c&&c.laub ? LAUB[c.laub] : null;
+  openSheet(`
+    <h2 class="p-name">${isNew?"Neue Pflanze":"Bearbeiten"}</h2>
+    <form class="edit" id="editForm">
+      <label>Name<input type="text" name="name" value="${esc(p.name)}" required placeholder="z. B. Funkie"></label>
+      <div class="row2"><label>Sorte<input type="text" name="sorte" value="${esc(p.sorte)}" placeholder="z. B. Black Tower"></label>
+        <label>Botanischer Name<input type="text" name="botanisch" value="${esc(p.botanisch)}" placeholder="z. B. Hosta"></label></div>
+      <div class="row2"><label>Höhe (cm)<input type="number" name="hoehe" min="0" step="any" value="${p.hoehe??""}"></label>
+        <label>Durchmesser (cm)<input type="number" name="dcm" min="10" step="any" value="${Math.round((p.d??.5)*100)}"></label></div>
+      <div class="row2"><label>Art<select name="typ">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${p.typ===k?"selected":""}>${v}</option>`).join("")}</select></label>
+        <label>Status<select name="status"><option value="bestand" ${p.status!=="neu"?"selected":""}>Bestand</option><option value="neu" ${p.status==="neu"?"selected":""}>Neu geplant</option></select></label></div>
+      <label>Bereich<select name="beet"><option value="">–</option>${Object.entries(AREAS).map(([k,v])=>`<option value="${k}" ${p.beet===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      <div class="fld">Blütenfarbe${swatchRow("swB",BLOOM_COLORS,bc)}</div>
+      <div class="fld">Blühmonate <span id="bmHint"></span><div class="mtoggle" id="bmT"></div></div>
+      <div class="fld">Laubfarbe${swatchRow("swL",LEAF_COLORS,lc)}</div>
+      <label>Laub im Winter<select name="laub"><option value="">${defLeaf?`Standard: ${defLeaf}`:"Standard"}</option>${Object.entries(LAUB).map(([k,v])=>`<option value="${k}" ${p.laub===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      <div class="checks"><label><input type="checkbox" name="stuetze" ${p.stuetze?"checked":""}> braucht Stütze</label><label><input type="checkbox" name="unsicher" ${p.unsicher?"checked":""}> Angaben unsicher</label></div>
+      <label>Notiz<textarea name="notiz">${esc(p.notiz)}</textarea></label>
+      <div class="actions"><button class="btn primary" type="submit">Speichern</button><button class="btn" type="button" id="bCancel">Abbrechen</button>${isNew?"":`<button class="btn danger" type="button" id="bDel">Löschen</button>`}</div>
+    </form>`);
+  const renderBm=()=>{ const cur=bm||defBm; const el=$("#bmT"); el.classList.toggle("inherited", !bm);
+    el.innerHTML=MSHORT.map((s,i)=>`<button type="button" data-m="${i+1}" aria-pressed="${cur.includes(i+1)}">${s}</button>`).join("");
+    $("#bmHint").innerHTML = bm ? (defBm.length?`· <button type="button" class="linkbtn" id="bmReset">Artwert verwenden (${monthRange(defBm)})</button>`:"") : (defBm.length?`<span class="inh">· Artwert, antippen zum Anpassen</span>`:`<span class="inh">· antippen zum Auswählen</span>`);
+    if ($("#bmReset")) $("#bmReset").onclick=()=>{ bm=null; renderBm(); }; };
+  renderBm();
+  $("#bmT").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; const m=+b.dataset.m; if(!bm) bm=[...defBm]; bm = bm.includes(m) ? bm.filter(x=>x!==m) : [...bm,m].sort((a,b)=>a-b); renderBm(); };
+  const sw=(sel,set)=>{ $(sel).onclick=e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.c); $(sel).querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); }; };
+  sw("#swB", v=>bc=v); sw("#swL", v=>lc=v);
+  $("#bCancel").onclick = () => isNew ? closeSheet() : openDetail(id);
+  if (!isNew) $("#bDel").onclick = () => delPlant(id);
+  $("#editForm").onsubmit = async e => {
+    e.preventDefault(); const f=new FormData(e.target);
+    const doc = { name:(f.get("name")||"").trim(), sorte:(f.get("sorte")||"").trim(), botanisch:(f.get("botanisch")||"").trim(),
+      hoehe: f.get("hoehe") ? Number(f.get("hoehe")) : null, d: Math.max(.1,(Number(f.get("dcm"))||50)/100),
+      typ:f.get("typ"), status:f.get("status"), beet:f.get("beet")||"", stuetze:!!f.get("stuetze"), unsicher:!!f.get("unsicher"),
+      notiz:(f.get("notiz")||"").trim(), bluetenfarbe:bc||null, laubfarbe:lc||null, laub:f.get("laub")||null,
+      bluehmonate: bm, x:p.x, y:p.y, pflege:p.pflege||null, b:p.b||null, form:p.form||null };
+    Object.keys(doc).forEach(k=>{ if(doc[k]===""||doc[k]===null||(doc[k]===false&&k==="unsicher")) delete doc[k]; });
+    await savePlant(isNew?null:id, doc);
+  };
+}
+
+/* ---------- Verschieben / Hinzufügen ---------- */
+function setMode(m, text){ state.mode=m; svg.classList.toggle("moving", m==="move"); svg.classList.toggle("picking", m==="pick"); $("#banner").classList.toggle("on", m!=="view"); $("#bannerText").textContent=text||""; $("#bannerOk").hidden = !(m==="move"||m==="pick"); }
+function startMove(id){ const p=state.plants.get(id); $("#sheet").classList.remove("on"); zoomTo(p); setMode("move","Ziehe die Pflanze an ihren neuen Platz."); }
+function cancelMove(){ const p=state.plants.get(state.sel); if(p){ delete p._x; delete p._y; drawPlant(state.sel); } setMode("view"); }
+$("#bannerCancel").onclick = () => { if(state.mode==="move"){ cancelMove(); openDetail(state.sel); } else if(state.mode==="pick") backToDraft(false); else setMode("view"); };
+$("#bannerOk").onclick = async () => {
+  if (state.mode==="pick"){ backToDraft(true); return; }
+  const id=state.sel, p=state.plants.get(id); setMode("view");
+  if (p && p._x!=null){
+    const x=+p._x.toFixed(2), y=+p._y.toFixed(2); delete p._x; delete p._y;
+    const a=areaAt(x*PX,y*PX); const upd={x,y}; if (a!=="garten" || !p.beet) upd.beet=a;
+    try{ await state.db.doc("plants/"+id).update(upd); toast("Neuer Platz gespeichert"); } catch(err){ handleWriteError(err); drawPlant(id); }
+  }
+  openDetail(id);
+};
+$("#addBtn").onclick = () => { closeSheet(); showView("plan"); setMode("add","Tippe auf die Stelle, an der die Pflanze steht."); };
+
+/* ---------- Speichern ---------- */
+function canWrite(){ return state.canWrite !== false && !!state.db; }
+async function savePlant(id, doc){
+  if (!state.db){ toast("Speichern ist in dieser Ansicht nicht möglich"); return; }
+  try{
+    if (id){ await state.db.doc("plants/"+id).set(doc); toast("Gespeichert"); openDetail(id); }
+    else { const nid="n"+Date.now().toString(36); await state.db.doc("plants/"+nid).set(doc); state.pendingNew=null; drawGhost(); toast("Pflanze hinzugefügt");
+      state.plants.set(nid,{...doc,id:nid}); drawPlant(nid,false); select(nid); }
+  }catch(err){ handleWriteError(err); }
+}
+async function delPlant(id){
+  const p=state.plants.get(id); if (!confirm(`„${p.name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+  try{ await state.db.doc("plants/"+id).delete(); closeSheet(); toast("Gelöscht"); }catch(err){ handleWriteError(err); }
+}
+function handleWriteError(err){
+  if (err && err.code==="invalid_argument"){ state.canWrite=false; applyWriteUI(); toast("Du kannst hier nur ansehen, nicht bearbeiten"); }
+  else if (err && err.code==="quota_exceeded") toast("Speicher voll: bitte nicht mehr benötigte Einträge löschen");
+  else toast("Speichern fehlgeschlagen, bitte noch einmal versuchen");
+}
+function applyWriteUI(){ $("#addBtn").hidden=!canWrite(); $("#fotoAdd").hidden=!state.assets; }
+
+/* ---------- Pflanzenliste ---------- */
+function renderList(){
+  const q=state.q.toLowerCase().trim(), f=state.filter;
+  const arr=[...state.plants.values()].filter(p=>{
+    if (f==="neu" && p.status!=="neu") return false; if (f==="st" && !p.stuetze) return false; if (f==="uns" && !p.unsicher) return false;
+    if (f==="nobloom" && (p.typ==="objekt" || (bloomMonths(p).length && bloomColor(p)))) return false;
+    if (q && !`${p.name} ${p.sorte||""} ${p.botanisch||""} ${p.notiz||""}`.toLowerCase().includes(q)) return false; return true; });
+  const groups={}; arr.forEach(p=>{ (groups[p.beet||"_"] ||= []).push(p); });
+  $("#plist").innerHTML = Object.entries(groups).map(([k,items])=>{
+    items.sort((a,b)=>(a.name||"").localeCompare(b.name||"","de"));
+    return `<h2 class="grp">${esc(AREAS[k]||"Ohne Bereich")}<small>${items.length}</small></h2><ul class="plist">`+items.map(p=>{
+      const fill=p.typ==="gehoelz"?leafColor(p):(bloomColor(p)||leafColor(p)), bm=bloomMonths(p);
+      return `<li><button type="button" data-id="${esc(p.id)}"><span class="dot ${p.status==="neu"?"neu":""}" style="background:${fill}"></span>
+      <span class="pl-main"><b>${esc(p.name||"Ohne Namen")}</b>${p.sorte?`<span>${esc(sorteTxt(p))}</span>`:""}${p.botanisch&&p.botanisch!==p.name?`<em>${esc(p.botanisch)}</em>`:""}</span>
+      <span class="pl-side">${bm.length?"Blüte "+monthRange(bm):""}${p.stuetze?" · Stütze":""}</span></button></li>`; }).join("")+`</ul>`;
+  }).join("") || `<div class="empty">Keine Pflanze passt zur Suche.</div>`;
+}
+$("#q").oninput = e => { state.q=e.target.value; renderList(); };
+$("#filters").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.filter=b.dataset.f; $("#filters").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); renderList(); };
+$("#plist").onclick = e => { const b=e.target.closest("button[data-id]"); if(!b) return; showView("plan"); requestAnimationFrame(()=>select(b.dataset.id,true)); };
+
+/* ---------- Aufgaben ---------- */
+function recFor(m){
+  const groups=new Map();
+  state.plants.forEach(p=>{ if(p.status==="neu"||p.typ==="platzhalter") return; const k=careKeyFor(p); if(!k) return; (groups.get(k)||groups.set(k,[]).get(k)).push(p.id); });
+  const out=[];
+  groups.forEach((ids,k)=>{ const c=state.care.get(k); if(!c||!c.aufgaben) return; c.aufgaben.forEach((a,i)=>{ if(a.m.includes(m)) out.push({rid:`${YEAR}-${String(m).padStart(2,"0")}-${k}-${i}`, key:k, titel:c.titel, a, ids}); }); });
+  const order=["schnitt","duengen","teilen","pflege","schutz"];
+  return out.sort((x,y)=>order.indexOf(x.a.typ)-order.indexOf(y.a.typ) || x.titel.localeCompare(y.titel,"de"));
+}
+function adoptedIds(){ const s=new Set(); state.todos.forEach(t=>{ if(t.fromCare) s.add(t.fromCare); }); return s; }
+const NOWKEY = YEAR*12 + nowM;
+function jahrOf(t){
+  if (!t.monat) return null;
+  if (t.jahr) return t.jahr;
+  if (t.order && t.order > 1e12){ const c=new Date(t.order); return c.getFullYear() + (t.monat < c.getMonth()+1 ? 1 : 0); }
+  return YEAR;
+}
+function keyOf(t){ return t.monat ? jahrOf(t)*12 + t.monat : null; }
+function titleOf(t){ return t.titel || t.text || "Ohne Titel"; }
+function descOf(t){ return t.titel ? (t.beschreibung||"") : ""; }
+function monthLabel(m, y){ return MONTHS[m-1] + (y && y!==YEAR ? " "+y : ""); }
+function nextMonth(){ return nowM===12 ? {monat:1, jahr:YEAR+1} : {monat:nowM+1, jahr:YEAR}; }
+function isOverdue(t){ return !t.done && t.monat && keyOf(t) < NOWKEY; }
+function plantName(id){ const p=state.plants.get(id); return p ? (p.name||"Ohne Namen")+(p.sorte?" "+sorteTxt(p):"") : null; }
+function plantChip(id, removable){ const n=plantName(id); if(!n) return "";
+  return `<span class="pchip"><button type="button" class="pc-go" data-goplant="${esc(id)}">${esc(n)}</button>${removable?`<button type="button" class="pc-x" data-rmplant="${esc(id)}" aria-label="${esc(n)} entfernen">×</button>`:""}</span>`; }
+
+function renderTodos(){
+  const w=canWrite();
+  const todos=[...state.todos.values()].sort((a,b)=>(a.order??1e15)-(b.order??1e15));
+  const open=todos.filter(t=>!t.done);
+  const overdue=open.filter(isOverdue).sort((a,b)=>keyOf(a)-keyOf(b));
+  const anytime=open.filter(t=>!t.monat);
+  const future=open.filter(t=>t.monat && keyOf(t)>=NOWKEY);
+  const done=todos.filter(t=>t.done).sort((a,b)=>(keyOf(b)??0)-(keyOf(a)??0));
+  const dueNow=overdue.length + future.filter(t=>keyOf(t)===NOWKEY).length;
+  const badge=$("#todoBadge"); badge.hidden=!dueNow; badge.textContent=dueNow;
+  const m=state.tMonth, rec=recFor(m), adopted=adoptedIds();
+  document.querySelectorAll("#todoSeg button").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.t===state.tTab));
+    b.textContent = b.dataset.t==="plan" ? `Geplante ToDos (${open.length})` : `Empfohlene Pflege (${rec.filter(r=>!adopted.has(r.rid)).length})`; });
+  $("#mnav").hidden = state.tTab==="plan";
+  $("#mnav").innerHTML = `<button type="button" data-mnav="-1" aria-label="Vorheriger Monat">‹</button><h2>${MONTHS[m-1]}</h2><button type="button" data-mnav="1" aria-label="Nächster Monat">›</button>${m!==nowM?`<button type="button" class="today" data-mnav="0">Heute</button>`:""}`;
+  const li = (t, extra) => { const n=(t.plantIds||[]).filter(i=>state.plants.has(i)).length, d=descOf(t);
+    return `<li class="tap ${t.done?"done":""}" data-open="${esc(t.id)}"><input type="checkbox" data-id="${esc(t.id)}" ${t.done?"checked":""} ${w?"":"disabled"} aria-label="Erledigt">
+     <div class="t-main"><div class="t-text t-title">${esc(titleOf(t))}</div>${d?`<div class="t-hint">${esc(d)}</div>`:""}
+     ${(extra||n||t.fromCare)?`<div class="t-meta">${extra||""}${t.fromCare?`<span class="pill">Pflegeempfehlung</span>`:""}${n?`<button type="button" class="linkbtn" data-plants="${esc(t.plantIds.join(","))}">Im Plan zeigen (${n})</button>`:""}</div>`:""}
+     ${extra && w && !t.done ? `<div class="moverow"><button type="button" class="btn sm" data-mv="next" data-tid="${esc(t.id)}">In den ${MONTHS[nextMonth().monat-1]} verschieben</button><button type="button" class="btn sm" data-mv="year" data-tid="${esc(t.id)}">Für ${Math.max(jahrOf(t),YEAR)+1} vormerken</button></div>`:""}
+     </div><span class="chev" aria-hidden="true">›</span></li>`; };
+  const list=(arr, ex)=>`<ul class="tlist">${arr.map(t=>li(t, ex&&ex(t))).join("")}</ul>`;
+  if (state.tTab==="plan"){
+    let html = w ? `<button type="button" class="btn primary tnew" id="todoNew">+ Neues ToDo</button>` : "";
+    if (overdue.length) html += `<h2 class="grp over">Unerledigt<small>${overdue.length}</small></h2>` + list(overdue, t=>`<span class="pill over">${monthLabel(t.monat, jahrOf(t)===YEAR?null:jahrOf(t))}</span>`);
+    html += `<h2 class="grp">Jederzeit<small>${anytime.length}</small></h2>` + (anytime.length?list(anytime):`<div class="empty">Keine offenen ToDos.</div>`);
+    const groups=new Map(); future.forEach(t=>{ const k=keyOf(t); (groups.get(k)||groups.set(k,[]).get(k)).push(t); });
+    if (!groups.has(NOWKEY)) groups.set(NOWKEY, []);
+    [...groups.keys()].sort((a,b)=>a-b).forEach(k=>{ const arr=groups.get(k), y=Math.floor((k-1)/12), mm=k-y*12;
+      html += `<h2 class="grp">${monthLabel(mm,y)}${k===NOWKEY?` <small>diesen Monat</small>`:""}<small>${arr.length||""}</small></h2>` +
+        (arr.length?list(arr):`<div class="empty">Nichts geplant. Unter „Empfohlene Pflege“ findest du Vorschläge.</div>`); });
+    if (done.length) html += `<details class="donebox"${state.doneOpen?" open":""}><summary>Erledigt (${done.length})</summary>${list(done, t=>t.monat?`<span class="pill">${monthLabel(t.monat,jahrOf(t))}</span>`:"")}</details>`;
+    $("#tlist").innerHTML = html;
+    const dbx=$("#tlist details.donebox"); if (dbx) dbx.ontoggle=()=>{ state.doneOpen=dbx.open; };
+    if ($("#todoNew")) $("#todoNew").onclick=()=>openTodoEdit(null);
+  } else {
+    const groups={}; rec.forEach(r=>{ (groups[r.a.typ] ||= []).push(r); });
+    $("#tlist").innerHTML = rec.length ? Object.entries(groups).map(([typ,arr])=>`<h2 class="grp"><span style="color:${TASK[typ].c}">${TASK[typ].n}</span><small>${arr.length}</small></h2><ul class="tlist">`+arr.map(r=>{
+      const ad=adopted.has(r.rid);
+      return `<li><div class="t-main"><div class="t-text"><span class="t-title">${esc(r.titel)}</span></div><div class="t-sub">${esc(r.a.text)}</div>
+        <div class="t-meta"><button type="button" class="linkbtn" data-plants="${esc(r.ids.join(","))}">Im Plan zeigen (${r.ids.length})</button>
+        ${ad?`<span class="adopted">✓ In geplanten ToDos</span>`:(w?`<button type="button" class="btn sm" data-adopt="${esc(r.rid)}">Übernehmen</button>`:"")}</div></div></li>`; }).join("")+`</ul>`).join("")
+      + `<p class="muted" style="margin-top:16px">Allgemeine Empfehlungen je Pflanzenart. Übernommene Punkte erscheinen unter „Geplante ToDos“ und lassen sich dort abhaken.</p>`
+      : `<div class="empty">Im ${MONTHS[m-1]} steht keine Pflege an.</div>`;
+  }
+  if (state.openTodo && $("#todoDetail") && $("#sheet").classList.contains("on")) openTodo(state.openTodo);
+}
+async function updTodo(id, upd, msg){ try{ await state.db.doc("todos/"+id).update(upd); if(msg) toast(msg); }catch(err){ handleWriteError(err); } }
+async function moveTodo(id, how){ const t=state.todos.get(id); if(!t) return;
+  if (how==="next"){ const n=nextMonth(); await updTodo(id,{monat:n.monat, jahr:n.jahr},`In den ${MONTHS[n.monat-1]} verschoben`); }
+  else { const y=Math.max(jahrOf(t)||YEAR, YEAR)+1; await updTodo(id,{jahr:y},`Für ${MONTHS[t.monat-1]} ${y} vorgemerkt`); } }
+function todoSheet(html){ const prev=state.sel; state.sel=null; if(prev) drawPlant(prev); openSheet(html); }
+
+function openTodo(id){
+  const t=state.todos.get(id); if(!t){ state.openTodo=null; return; }
+  state.openTodo=id; const w=canWrite(), d=descOf(t), ov=isOverdue(t);
+  const ids=(t.plantIds||[]).filter(i=>state.plants.has(i));
+  const when = t.monat ? monthLabel(t.monat, jahrOf(t)) : "Jederzeit";
+  todoSheet(`<div id="todoDetail">
+    <h2 class="p-name">${esc(titleOf(t))}</h2>
+    <div class="tags"><span class="tag ${ov?"st":""}">${esc(when)}${ov?" · überfällig":""}</span>${t.done?`<span class="tag unsicher">Erledigt</span>`:""}${t.fromCare?`<span class="tag">Pflegeempfehlung</span>`:""}</div>
+    ${d?`<div class="tdesc">${esc(d)}</div>`:`<div class="muted" style="margin-top:10px">Keine Beschreibung.${w?" Über „Bearbeiten“ ergänzen.":""}</div>`}
+    ${ids.length?`<div class="block"><h3><span class="grow">Pflanzen</span><button type="button" class="btn sm" id="tdShow">Im Plan zeigen</button></h3><div class="chiplist">${ids.map(i=>plantChip(i,false)).join("")}</div></div>`:""}
+    ${w?`<div class="actions"><button class="btn primary" type="button" id="tdDone">${t.done?"Wieder öffnen":"Erledigt"}</button><button class="btn" type="button" id="tdEdit">Bearbeiten</button><button class="btn danger" type="button" id="tdDel">Löschen</button></div>
+    ${ov?`<div class="moverow"><button type="button" class="btn sm" id="tdNext">In den ${MONTHS[nextMonth().monat-1]} verschieben</button><button type="button" class="btn sm" id="tdYear">Für ${Math.max(jahrOf(t),YEAR)+1} vormerken</button></div>`:""}`:""}
+  </div>`);
+  const sb=$("#sheetBody");
+  sb.querySelectorAll("[data-goplant]").forEach(b=>b.onclick=()=>{ state.openTodo=null; showPlants([b.dataset.goplant]); });
+  if ($("#tdShow")) $("#tdShow").onclick=()=>{ state.openTodo=null; showPlants(ids); };
+  if (!w) return;
+  $("#tdDone").onclick=()=>updTodo(id,{done:!t.done}, t.done?"Wieder geöffnet":"Erledigt ✓");
+  $("#tdEdit").onclick=()=>openTodoEdit(id);
+  $("#tdDel").onclick=async e=>{ const b=e.currentTarget; if(!b.dataset.sure){ b.dataset.sure="1"; b.textContent="Wirklich löschen?"; return; }
+    try{ await state.db.doc("todos/"+id).delete(); state.openTodo=null; closeSheet(); toast("ToDo gelöscht"); }catch(err){ handleWriteError(err); } };
+  if ($("#tdNext")) $("#tdNext").onclick=()=>moveTodo(id,"next");
+  if ($("#tdYear")) $("#tdYear").onclick=()=>moveTodo(id,"year");
+}
+
+function openTodoEdit(id, preset){
+  const t = id ? state.todos.get(id) : null;
+  state.openTodo=null;
+  state.todoDraft = { id, from: $("#v-plan").classList.contains("on") ? "plan" : "todo",
+    titel: t ? titleOf(t) : "", beschreibung: t ? descOf(t) : "",
+    monat: t ? (t.monat||0) : nowM, jahr: t ? (jahrOf(t)||YEAR) : YEAR,
+    plantIds: t ? [...(t.plantIds||[])] : [], ...(preset||{}) };
+  renderDraft();
+}
+function renderDraft(){
+  const d=state.todoDraft, isNew=!d.id, yrs=[YEAR,YEAR+1,YEAR+2]; if (d.jahr && !yrs.includes(d.jahr)) yrs.unshift(d.jahr);
+  todoSheet(`
+    <h2 class="p-name">${isNew?"Neues ToDo":"ToDo bearbeiten"}</h2>
+    <form class="edit" id="todoEditForm">
+      <label>Kurztitel<input type="text" name="titel" value="${esc(d.titel)}" required maxlength="80" placeholder="z. B. Rosen anhäufeln"></label>
+      <label>Beschreibung<textarea name="beschreibung" rows="4" placeholder="Was genau ist zu tun? Material, Hinweise …">${esc(d.beschreibung)}</textarea></label>
+      <div class="row2"><label>Monat<select name="monat"><option value="0" ${!d.monat?"selected":""}>Jederzeit</option>${MONTHS.map((n,i)=>`<option value="${i+1}" ${d.monat===i+1?"selected":""}>${n}</option>`).join("")}</select></label>
+        <label id="jahrL" ${!d.monat?"hidden":""}>Jahr<select name="jahr">${yrs.map(y=>`<option value="${y}" ${d.jahr===y?"selected":""}>${y}</option>`).join("")}</select></label></div>
+      <div class="fld">Pflanzen<div class="chiplist" id="tdChips">${d.plantIds.map(i=>plantChip(i,true)).join("") || `<span class="muted">Keine Pflanzen zugeordnet.</span>`}</div>
+        <div><button type="button" class="btn sm" id="tdPick">${d.plantIds.length?"Im Plan ändern":"Im Plan auswählen"}</button></div></div>
+      <div class="actions"><button class="btn primary" type="submit">Speichern</button><button class="btn" type="button" id="tdCancel">Abbrechen</button>${isNew?"":`<button class="btn danger" type="button" id="tdDel2">Löschen</button>`}</div>
+    </form>`);
+  const f=$("#todoEditForm");
+  const grab=()=>{ const fd=new FormData(f); d.titel=(fd.get("titel")||"").trim(); d.beschreibung=(fd.get("beschreibung")||"").trim(); d.monat=Number(fd.get("monat"))||0; d.jahr=Number(fd.get("jahr"))||YEAR; };
+  f.monat.onchange=()=>{ $("#jahrL").hidden = f.monat.value==="0"; };
+  $("#tdChips").onclick=e=>{ const x=e.target.closest("[data-rmplant]"); if(x){ grab(); d.plantIds=d.plantIds.filter(i=>i!==x.dataset.rmplant); renderDraft(); } };
+  $("#tdPick").onclick=()=>{ grab(); startPick(); };
+  $("#tdCancel").onclick=()=>{ const id=d.id; state.todoDraft=null; if(id) openTodo(id); else closeSheet(); };
+  if ($("#tdDel2")) $("#tdDel2").onclick=async e=>{ const b=e.currentTarget; if(!b.dataset.sure){ b.dataset.sure="1"; b.textContent="Wirklich löschen?"; return; }
+    try{ await state.db.doc("todos/"+d.id).delete(); state.todoDraft=null; closeSheet(); toast("ToDo gelöscht"); }catch(err){ handleWriteError(err); } };
+  f.onsubmit=async e=>{ e.preventDefault(); grab(); if(!d.titel) return;
+    const old = d.id ? state.todos.get(d.id) : null;
+    const doc = { titel:d.titel, done: old ? !!old.done : false, plantIds:d.plantIds, order: old?.order ?? Date.now() };
+    if (d.beschreibung) doc.beschreibung=d.beschreibung;
+    if (d.monat){ doc.monat=d.monat; doc.jahr=d.jahr; }
+    if (old?.fromCare) doc.fromCare=old.fromCare;
+    const id = d.id || "t"+Date.now().toString(36);
+    try{ await state.db.doc("todos/"+id).set(doc); toast(d.id?"ToDo gespeichert":"ToDo angelegt"); state.todoDraft=null;
+      if ($("#v-todo").classList.contains("on")) openTodo(id); else closeSheet(); }catch(err){ handleWriteError(err); } };
+}
+function startPick(){
+  const d=state.todoDraft; state.pick=new Set(d.plantIds);
+  $("#sheet").classList.remove("on"); $(".app").classList.remove("sheet-open");
+  showView("plan"); setMode("pick", ""); pickBanner(); drawAll();
+}
+function pickBanner(){ const n=state.pick?.size||0; $("#bannerText").textContent = n ? `${n} ${n===1?"Pflanze":"Pflanzen"} gewählt · weitere antippen` : "Tippe die Pflanzen für dieses ToDo an."; }
+function backToDraft(ok){
+  const d=state.todoDraft; if (ok && d) d.plantIds=[...state.pick];
+  state.pick=null; setMode("view"); drawAll();
+  if (!d) return;
+  if (d.from==="todo") showView("todo");
+  renderDraft();
+}
+$("#todoSeg").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.tTab=b.dataset.t; renderTodos(); };
+$("#mnav").onclick = e => { const b=e.target.closest("[data-mnav]"); if(!b) return; const v=+b.dataset.mnav; state.tMonth = v===0 ? nowM : ((state.tMonth-1+v+12)%12)+1; renderTodos(); };
+$("#tlist").onchange = async e => { const c=e.target.closest("input[type=checkbox][data-id]"); if(!c) return;
+  try{ await state.db.doc("todos/"+c.dataset.id).update({done:c.checked}); }catch(err){ handleWriteError(err); renderTodos(); } };
+$("#tlist").onclick = async e => {
+  if (e.target.closest("input[type=checkbox]")) return;
+  const pl=e.target.closest("[data-plants]"), ad=e.target.closest("[data-adopt]"), mv=e.target.closest("[data-mv]"), op=e.target.closest("[data-open]");
+  if (pl){ showPlants(pl.dataset.plants.split(",")); return; }
+  if (mv){ mv.disabled=true; await moveTodo(mv.dataset.tid, mv.dataset.mv); return; }
+  if (ad){ const r=recFor(state.tMonth).find(x=>x.rid===ad.dataset.adopt); if(!r) return; ad.disabled=true;
+    const y = state.tMonth < nowM ? YEAR+1 : YEAR;
+    const doc={titel:`${r.titel.replace(/\s*\(.*\)$/,"")}: ${TASK[r.a.typ]?.n||"Pflege"}`, beschreibung:r.a.text, done:false, plantIds:r.ids, monat:state.tMonth, jahr:y, fromCare:r.rid, order:Date.now()};
+    try{ await state.db.doc("todos/c"+Date.now().toString(36)).set(doc); toast("In geplante ToDos übernommen"); }catch(err){ handleWriteError(err); ad.disabled=false; } return; }
+  if (op) openTodo(op.dataset.open);
+};
+function showPlants(ids){
+  const ps=ids.map(i=>state.plants.get(i)).filter(Boolean); if(!ps.length) return; showView("plan");
+  requestAnimationFrame(()=>{ const xs=ps.map(p=>p.x*PX), ys=ps.map(p=>p.y*PX), pad=60;
+    fitWorld({x:Math.min(...xs)-pad,y:Math.min(...ys)-pad,w:Math.max(...xs)-Math.min(...xs)+pad*2,h:Math.max(...ys)-Math.min(...ys)+pad*2},0); select(ps[0].id); });
+}
+
+/* ---------- Fotos ---------- */
+function renderAreaChips(){
+  const cnt={}; state.fotos.forEach(f=>{ cnt[f.bereich||"garten"]=(cnt[f.bereich||"garten"]||0)+1; });
+  $("#areaChips").innerHTML = `<button type="button" data-a="all" aria-pressed="${state.area==="all"}">Alle<span class="n">${state.fotos.size}</span></button>` +
+    Object.entries(AREAS).map(([k,v])=>`<button type="button" data-a="${k}" aria-pressed="${state.area===k}">${v}${cnt[k]?`<span class="n">${cnt[k]}</span>`:""}</button>`).join("");
+}
+function renderFotos(){
+  renderAreaChips();
+  const arr=[...state.fotos.values()].filter(f=>state.area==="all"||(f.bereich||"garten")===state.area).sort((a,b)=>String(b.datum).localeCompare(String(a.datum)) || (b.order||0)-(a.order||0));
+  $("#fgrid").innerHTML = arr.length ? `<div class="grid">${arr.map(f=>{ const p=f.plantId&&state.plants.get(f.plantId);
+      return `<button type="button" data-foto="${esc(f.id)}"><img src="${esc(KG.blobUrl(f.asset))}" alt="${esc(p?p.name:(AREAS[f.bereich]||"Foto"))}" loading="lazy"><span class="cap">${esc(p?p.name:(AREAS[f.bereich]||""))}${f.datum?" · "+esc(new Date(f.datum).toLocaleDateString("de-DE",{day:"numeric",month:"short"})):""}</span></button>`; }).join("")}</div>`
+    : `<div class="empty">${state.assets?"Noch keine Fotos. Mit „+ Fotos“ kannst du Bilder hochladen und Pflanzen oder Bereichen zuordnen.":"Noch keine Fotos. Hochladen ist nur mit Bearbeitungsrecht möglich."}</div>`;
+  if (state.assets && state.assets.list){ state.assets.list().then(r=>{ const u=r&&r.usage; if(u&&u.quotaBytes) $("#meter").textContent=`Speicher: ${(u.usedBytes/1048576).toFixed(1)} MB von ${(u.quotaBytes/1048576).toFixed(0)} MB belegt`; }).catch(()=>{}); }
+}
+$("#areaChips").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.area=b.dataset.a; renderFotos(); };
+$("#fgrid").onclick = e => { const b=e.target.closest("[data-foto]"); if(b) openFoto(b.dataset.foto); };
+$("#fotoAdd").onclick = () => pickFotos({bereich: state.area!=="all"?state.area:"staudenbeet"});
+function pickFotos(pre){ state.upload=pre; $("#fileIn").value=""; $("#fileIn").click(); }
+$("#fileIn").onchange = () => { const files=[...$("#fileIn").files]; if(!files.length) return; openUpload(files, state.upload||{}); };
+function plantOptions(bereich, cur){
+  const arr=[...state.plants.values()].filter(p=>!bereich || (p.beet||"")===bereich).sort((a,b)=>(a.name||"").localeCompare(b.name||"","de"));
+  return `<option value="">– keine bestimmte Pflanze –</option>`+arr.map(p=>`<option value="${esc(p.id)}" ${cur===p.id?"selected":""}>${esc(p.name||"Ohne Namen")}${p.sorte?" "+esc(sorteTxt(p)):""} (${esc(p.id)})</option>`).join("");
+}
+function openUpload(files, pre){
+  const urls=files.map(f=>URL.createObjectURL(f)); const today=new Date().toISOString().slice(0,10);
+  openSheet(`<h2 class="p-name">${files.length>1?files.length+" Fotos":"Foto"} hinzufügen</h2>
+    <form class="edit" id="upForm"><div class="upprev">${urls.map(u=>`<img src="${u}" alt="">`).join("")}</div>
+      <label>Bereich<select name="bereich" id="upArea">${Object.entries(AREAS).map(([k,v])=>`<option value="${k}" ${pre.bereich===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      <label>Pflanze (optional)<select name="plantId" id="upPlant">${plantOptions(pre.bereich, pre.plantId)}</select></label>
+      <label>Datum<input type="date" name="datum" value="${today}"></label>
+      <label>Notiz<textarea name="notiz" placeholder="z. B. Austrieb, Blüte, Schneckenfraß …"></textarea></label>
+      <div class="actions"><button class="btn primary" type="submit" id="upGo">Hochladen</button><button class="btn" type="button" id="upCancel">Abbrechen</button></div>
+      <div class="muted" id="upStatus"></div></form>`);
+  $("#upArea").onchange = e => { $("#upPlant").innerHTML = plantOptions(e.target.value, null); };
+  $("#upCancel").onclick = () => closeSheet();
+  $("#upForm").onsubmit = async e => {
+    e.preventDefault(); const f=new FormData(e.target); $("#upGo").disabled=true;
+    let ok=0;
+    for (let i=0;i<files.length;i++){
+      $("#upStatus").textContent=`Lade ${i+1} von ${files.length} hoch …`;
+      try{
+        const blob = await shrink(files[i]);
+        const r = await state.assets.upload(blob, {type: blob.type||"image/jpeg"});
+        const id="f"+Date.now().toString(36)+i;
+        const doc={asset:r.id, bereich:f.get("bereich")||"garten", datum:f.get("datum")||today, order:Date.now()};
+        if (f.get("plantId")) doc.plantId=f.get("plantId"); const n=(f.get("notiz")||"").trim(); if(n) doc.notiz=n;
+        await state.db.doc("fotos/"+id).set(doc); ok++;
+      }catch(err){ const c=err&&err.code;
+        toast(c==="unsupported_type"?"Dieses Bildformat wird nicht unterstützt. Bitte als JPEG speichern.":c==="too_large"?"Das Foto ist zu groß.":c==="quota_or_state"?"Der Fotospeicher ist voll.":"Hochladen fehlgeschlagen."); }
+    }
+    urls.forEach(u=>URL.revokeObjectURL(u));
+    if (ok){ toast(ok===1?"Foto gespeichert":`${ok} Fotos gespeichert`); const pid=f.get("plantId"); if(pid && state.plants.has(pid)) openDetail(pid); else closeSheet(); }
+    else $("#upGo").disabled=false;
+  };
+}
+async function shrink(file){
+  try{
+    const bmp = await createImageBitmap(file); const max=1800; const k=Math.min(1, max/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas"); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/jpeg",.85));
+  }catch(e){ return file; }
+}
+function openFoto(fid){
+  const f=state.fotos.get(fid); if(!f) return; const p=f.plantId&&state.plants.get(f.plantId); const w=canWrite();
+  openSheet(`<img class="bigimg" src="${esc(KG.blobUrl(f.asset))}" alt="">
+    <dl class="facts"><dt>Datum</dt><dd>${f.datum?esc(new Date(f.datum).toLocaleDateString("de-DE",{day:"numeric",month:"long",year:"numeric"})):"–"}</dd>
+      <dt>Bereich</dt><dd>${esc(AREAS[f.bereich]||"–")}</dd>
+      <dt>Pflanze</dt><dd>${p?`<button type="button" class="linkbtn" id="fPlant">${esc(p.name)}${p.sorte?" "+esc(sorteTxt(p)):""}</button>`:"–"}</dd></dl>
+    ${f.notiz?`<div class="note">${esc(f.notiz)}</div>`:""}
+    ${w?`<form class="edit" id="fEdit"><label>Bereich<select name="bereich" id="feArea">${Object.entries(AREAS).map(([k,v])=>`<option value="${k}" ${f.bereich===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      <label>Pflanze<select name="plantId" id="fePlant">${plantOptions(f.bereich, f.plantId)}</select></label>
+      <label>Notiz<textarea name="notiz">${esc(f.notiz)}</textarea></label>
+      <div class="actions"><button class="btn primary" type="submit">Zuordnung speichern</button>${state.assets?`<button class="btn danger" type="button" id="fDel">Foto löschen</button>`:""}</div></form>`:""}`);
+  if ($("#fPlant")) $("#fPlant").onclick=()=>{ showView("plan"); requestAnimationFrame(()=>select(p.id,true)); };
+  if (!w) return;
+  $("#feArea").onchange = e => { $("#fePlant").innerHTML = plantOptions(e.target.value, null); };
+  $("#fEdit").onsubmit = async e => { e.preventDefault(); const d=new FormData(e.target);
+    const doc={asset:f.asset, bereich:d.get("bereich"), datum:f.datum, order:f.order||0}; if(d.get("plantId")) doc.plantId=d.get("plantId"); const n=(d.get("notiz")||"").trim(); if(n) doc.notiz=n;
+    try{ await state.db.doc("fotos/"+fid).set(doc); toast("Gespeichert"); openFoto(fid); }catch(err){ handleWriteError(err); } };
+  if ($("#fDel")) $("#fDel").onclick = async () => { if(!confirm("Foto endgültig löschen?")) return;
+    try{ await state.assets.delete(f.asset).catch(()=>{}); await state.db.doc("fotos/"+fid).delete(); closeSheet(); toast("Foto gelöscht"); }catch(err){ handleWriteError(err); } };
+}
+
+
+/* ---------- Konto, Sicherung ---------- */
+function renderAcct(){
+  const u=KG.auth.user, b=$("#acct");
+  if (u){ const n=(u.email||"?"); b.classList.add("on"); b.innerHTML=`<span class="av">${esc(n[0].toUpperCase())}</span><span class="nm">Bearbeiten</span>`; b.setAttribute("aria-label","Konto: "+n); }
+  else { b.classList.remove("on"); b.textContent="Anmelden"; b.setAttribute("aria-label","Anmelden zum Bearbeiten"); }
+}
+function openAcct(){
+  const u=KG.auth.user;
+  if (!u){
+    openSheet(`<h2 class="p-name">Anmelden</h2>
+      <p class="muted" style="font-size:14px">Ansehen geht ohne Anmeldung. Zum Bearbeiten mit den Zugangsdaten anmelden, die Kathleen dir gegeben hat.</p>
+      <form class="edit" id="loginForm">
+        <label>E-Mail<input type="text" name="email" inputmode="email" autocomplete="username" autocapitalize="off" required></label>
+        <label>Passwort<input type="text" name="pw" autocomplete="current-password" required style="-webkit-text-security:disc"></label>
+        <div class="actions"><button class="btn primary" type="submit" id="loginGo">Anmelden</button></div>
+        <div class="muted" id="loginMsg" role="status"></div>
+      </form>`);
+    const f=$("#loginForm"); f.querySelector('[name=pw]').type="password";
+    f.onsubmit=async e=>{ e.preventDefault(); const d=new FormData(f); $("#loginGo").disabled=true; $("#loginMsg").textContent="Melde an …";
+      try{ await KG.auth.signIn(String(d.get("email")).trim(), String(d.get("pw"))); }
+      catch(err){ $("#loginGo").disabled=false; $("#loginMsg").textContent = err.code==="bad_login" ? "E-Mail oder Passwort stimmt nicht." : "Anmelden hat nicht geklappt. Bist du online?"; } };
+    return;
+  }
+  openSheet(`<h2 class="p-name">Konto</h2>
+    <div class="tags"><span class="tag">${esc(u.email||"")}</span><span class="tag unsicher">darf bearbeiten</span></div>
+    <div class="block"><h3>Passwort ändern</h3>
+      <form class="edit" id="pwForm"><label>Neues Passwort<input type="password" name="pw" minlength="8" autocomplete="new-password" required></label>
+        <div class="actions"><button class="btn sm" type="submit">Passwort speichern</button></div></form></div>
+    <div class="block"><h3>Sicherung</h3>
+      <p class="muted" style="font-size:14px;margin:0 0 10px">Alle Daten als Datei sichern oder eine Sicherung einspielen. Fotos sind in der Sicherung nicht enthalten.</p>
+      <div class="actions" style="margin-top:0"><button class="btn sm" type="button" id="expBtn">Sicherung herunterladen</button><button class="btn sm" type="button" id="impBtn">Sicherung einspielen</button></div>
+      <input type="file" id="impFile" accept="application/json,.json" hidden><div class="muted" id="impMsg" role="status"></div></div>
+    <div class="actions"><button class="btn danger" type="button" id="logout">Abmelden</button></div>`);
+  $("#pwForm").onsubmit=async e=>{ e.preventDefault(); try{ await KG.auth.setPassword(new FormData(e.target).get("pw")); toast("Passwort geändert"); e.target.reset(); }catch(err){ toast("Passwort konnte nicht geändert werden"); } };
+  $("#logout").onclick=()=>KG.auth.signOut();
+  $("#expBtn").onclick=()=>{ const blob=new Blob([JSON.stringify(KG.exportAll(),null,1)],{type:"application/json"}); const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=`kleingarten-sicherung-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+  $("#impBtn").onclick=()=>$("#impFile").click();
+  $("#impFile").onchange=async e=>{ const file=e.target.files[0]; if(!file) return;
+    try{ const obj=JSON.parse(await file.text()); const n=Object.values(obj).reduce((s,v)=>s+Object.keys(v||{}).length,0);
+      const b=$("#impBtn"); if(!b.dataset.sure){ b.dataset.sure="1"; b.dataset.n=n; b.textContent=`${n} Einträge einspielen?`; state.importObj=obj; $("#impMsg").textContent="Gleichnamige Einträge werden überschrieben. Zum Bestätigen noch einmal tippen."; b.onclick=doImport; return; } }
+    catch(err){ $("#impMsg").textContent="Die Datei ist keine gültige Sicherung."; } };
+  async function doImport(){ const b=$("#impBtn"); b.disabled=true;
+    try{ const n=await KG.importAll(state.importObj,(i,t)=>{ $("#impMsg").textContent=`Spiele ein … ${i} von ${t}`; }); $("#impMsg").textContent=`${n} Einträge eingespielt.`; toast("Sicherung eingespielt"); }
+    catch(err){ $("#impMsg").textContent="Einspielen fehlgeschlagen."; b.disabled=false; } }
+}
+$("#acct").onclick=()=>{ if($("#acct").hidden) return; openAcct(); };
+function updOnline(){ $("#offline").hidden = navigator.onLine; }
+window.addEventListener("online",updOnline); window.addEventListener("offline",updOnline);
+
+/* ---------- Navigation ---------- */
+function showView(v){
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on", s.id==="v-"+v));
+  document.querySelectorAll("nav.tabs button").forEach(b=>{ if(b.dataset.v===v) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  $("#viewTitle").textContent = {plan:"Plan",list:"Pflanzen",todo:"Aufgaben",foto:"Fotos"}[v];
+  if (v!=="plan"){ if(state.mode==="move") cancelMove(); else if(state.mode==="pick"){ state.pick=null; setMode("view"); drawAll(); } else if(state.mode!=="view") setMode("view"); $("#sheet").classList.remove("on"); $(".app").classList.remove("sheet-open"); }
+  if (v==="list") renderList(); if (v==="todo") renderTodos(); if (v==="foto") renderFotos();
+  if (v==="plan") requestAnimationFrame(applyVB);
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
+
+/* ---------- Start ---------- */
+renderControls();
+requestAnimationFrame(()=>fitBed());
+(async () => {
+  const [db, user, assets] = await Promise.all(["db","user","assets"].map(n => window.claude?.use?.(n) ?? null));
+  renderAcct(); updOnline(); if (!KG.configured) $("#acct").hidden=true;
+  if (!db){ $("#status").textContent=""; $("#acct").hidden=true;
+    $("#v-plan").insertAdjacentHTML("beforeend",`<div class="setup"><div class="card"><h2 class="p-name" style="margin-top:0">Fast fertig</h2><p>Die App ist noch nicht mit der Datenbank verbunden. Trage in <code>js/config.js</code> die Supabase-Adresse und den Schlüssel ein.</p></div></div>`); return; }
+  state.db=db; state.assets=assets||null;
+  state.canWrite = user ? await user.can("data.write") : null;
+  applyWriteUI();
+  $("#status").textContent = state.canWrite ? "" : "Nur ansehen";
+  const redraw = () => { drawAll(); renderControls(); if ($("#v-list").classList.contains("on")) renderList(); if ($("#v-todo").classList.contains("on")) renderTodos(); };
+  db.collection("plants").onSnapshot(snap=>{
+    const next=new Map(); snap.docs.forEach(d=>{ const v={...d.data(), id:d.id}; const old=state.plants.get(d.id);
+      if (old && old._x!=null && state.mode==="move" && state.sel===d.id){ v._x=old._x; v._y=old._y; } next.set(d.id,v); });
+    state.plants=next; redraw();
+    if (state.sel && !state.plants.has(state.sel)) closeSheet();
+    if (!$("#status").textContent || /Pflanzen/.test($("#status").textContent)) $("#status").textContent = state.plants.size+" Pflanzen";
+  }, ()=>{ $("#status").textContent="Verbindung unterbrochen"; });
+  db.collection("pflege").onSnapshot(snap=>{ state.care=new Map(snap.docs.map(d=>[d.id,d.data()])); redraw(); renderTodos();
+    if (state.sel && $("#sheet").classList.contains("on") && !$("#editForm")) openDetail(state.sel); }, ()=>{});
+  db.collection("info").onSnapshot(snap=>{ const d=snap.docs.find(x=>x.id==="wissen"); state.wissen=d?(d.data().text||""):""; }, ()=>{});
+  db.collection("todos").onSnapshot(snap=>{ state.todos=new Map(snap.docs.map(d=>[d.id,{...d.data(),id:d.id}])); renderTodos(); }, ()=>{});
+  db.collection("fotos").onSnapshot(snap=>{ state.fotos=new Map(snap.docs.map(d=>[d.id,{...d.data(),id:d.id}])); if ($("#v-foto").classList.contains("on")) renderFotos();
+    if (state.sel && $("#sheet").classList.contains("on") && !$("#editForm") && !$("#upForm")) openDetail(state.sel); }, ()=>{});
+})();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol==="https:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(reg => {
+    reg.addEventListener("updatefound", () => { const w=reg.installing; w && w.addEventListener("statechange", () => {
+      if (w.state==="installed" && navigator.serviceWorker.controller) { const t=document.getElementById("toast"); t.textContent="Neue Version geladen"; t.classList.add("on"); setTimeout(()=>location.reload(),1200); } }); });
+  }).catch(()=>{}));
+}
+</script>
+</body>
+</html>

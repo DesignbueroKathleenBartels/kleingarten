@@ -1,0 +1,17 @@
+# Hält das kostenlose Supabase-Projekt wach (wird sonst nach 7 Tagen ohne Nutzung pausiert).
+name: Supabase wach halten
+on:
+  schedule:
+    - cron: "17 6 */3 * *"   # alle 3 Tage
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Datenbank kurz abfragen
+        run: |
+          URL=$(grep -oP 'supabaseUrl:\s*"\K[^"]+' js/config.js)
+          KEY=$(grep -oP 'supabaseKey:\s*"\K[^"]+' js/config.js)
+          [ -n "$URL" ] || { echo "Noch nicht eingerichtet"; exit 0; }
+          curl -fsS "$URL/rest/v1/docs?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" > /dev/null
