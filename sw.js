@@ -1,5 +1,5 @@
 /* Kleingarten – Service Worker: App offline verfügbar, Updates kommen automatisch. */
-const VERSION = "kg-2026-10-13-1";
+const VERSION = "kg-2026-10-13-2";
 const SHELL = ["./", "index.html", "js/config.js", "js/backend.js", "vendor/supabase.js", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 

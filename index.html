@@ -425,6 +425,16 @@ details.donebox summary{padding:18px 6px;font-weight:500}
 .setup{max-width:520px;margin:calc(var(--head-h) + 30px) auto 0;padding:0 18px}
 .setup .card{background:var(--glass);border:.5px solid var(--glass-edge);border-radius:22px;box-shadow:var(--glass-hi),var(--glass-shadow);padding:18px 20px}
 .offline{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--head-h) + 6px);z-index:6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;background:rgba(20,26,22,.66);color:#fff;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+/* Aufgaben: iOS-taugliche Tippflächen */
+ul.tlist li{align-items:center;-webkit-tap-highlight-color:transparent}
+.tcheck{flex:none;width:44px;height:44px;margin:-8px -6px -8px -10px;border:0;background:none;padding:0;display:grid;place-items:center;cursor:pointer;touch-action:manipulation}
+.tcheck i{width:24px;height:24px;border-radius:50%;border:1.8px solid color-mix(in srgb,var(--ink) 30%,transparent);display:block;transition:background .15s,border-color .15s}
+.tcheck[aria-pressed="true"] i{background:var(--tint);border-color:var(--tint);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:100%}
+.tcheck.ro i{opacity:.55}
+.t-open{display:block;width:100%;text-align:left;border:0;background:none;padding:2px 0;color:inherit;font:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.t-open .t-title,.t-open .t-hint{display:block}
+ul.tlist li.done .t-title{color:var(--ink-3);text-decoration:line-through}
+ul.tlist li.tap{cursor:pointer;touch-action:manipulation}
 .hidden,[hidden]{display:none!important}
 </style>
 </head>
@@ -1947,8 +1957,8 @@ function renderTodos(){
   $("#mnav").hidden = state.tTab==="plan";
   $("#mnav").innerHTML = `<button type="button" data-mnav="-1" aria-label="Vorheriger Monat">‹</button><h2>${MONTHS[m-1]}</h2><button type="button" data-mnav="1" aria-label="Nächster Monat">›</button>${m!==nowM?`<button type="button" class="today" data-mnav="0">Heute</button>`:""}`;
   const li = (t, extra) => { const n=(t.plantIds||[]).filter(i=>state.plants.has(i)).length, d=descOf(t);
-    return `<li class="tap ${t.done?"done":""}" data-open="${esc(t.id)}"><input type="checkbox" data-id="${esc(t.id)}" ${t.done?"checked":""} ${w?"":"disabled"} aria-label="Erledigt">
-     <div class="t-main"><div class="t-text t-title">${esc(titleOf(t))}</div>${d?`<div class="t-hint">${esc(d)}</div>`:""}
+    return `<li class="tap ${t.done?"done":""}" data-open="${esc(t.id)}"><button type="button" class="tcheck${w?"":" ro"}" data-check="${esc(t.id)}" aria-pressed="${t.done?"true":"false"}" aria-label="${t.done?"Als offen markieren":"Als erledigt markieren"}"><i></i></button>
+     <div class="t-main"><button type="button" class="t-open" data-open="${esc(t.id)}"><span class="t-text t-title">${esc(titleOf(t))}</span>${d?`<span class="t-hint">${esc(d)}</span>`:""}</button>
      ${(extra||n||t.fromCare)?`<div class="t-meta">${extra||""}${t.fromCare?`<span class="pill">Pflegeempfehlung</span>`:""}${n?`<button type="button" class="linkbtn" data-plants="${esc(t.plantIds.join(","))}">Im Plan zeigen (${n})</button>`:""}</div>`:""}
      ${extra && w && !t.done ? `<div class="moverow"><button type="button" class="btn sm" data-mv="next" data-tid="${esc(t.id)}">In den ${MONTHS[nextMonth().monat-1]} verschieben</button><button type="button" class="btn sm" data-mv="year" data-tid="${esc(t.id)}">Für ${Math.max(jahrOf(t),YEAR)+1} vormerken</button></div>`:""}
      </div><span class="chev" aria-hidden="true">›</span></li>`; };
@@ -2064,10 +2074,12 @@ function backToDraft(ok){
 }
 $("#todoSeg").onclick = e => { const b=e.target.closest("button"); if(!b) return; state.tTab=b.dataset.t; renderTodos(); };
 $("#mnav").onclick = e => { const b=e.target.closest("[data-mnav]"); if(!b) return; const v=+b.dataset.mnav; state.tMonth = v===0 ? nowM : ((state.tMonth-1+v+12)%12)+1; renderTodos(); };
-$("#tlist").onchange = async e => { const c=e.target.closest("input[type=checkbox][data-id]"); if(!c) return;
-  try{ await state.db.doc("todos/"+c.dataset.id).update({done:c.checked}); }catch(err){ handleWriteError(err); renderTodos(); } };
 $("#tlist").onclick = async e => {
-  if (e.target.closest("input[type=checkbox]")) return;
+  const ck=e.target.closest("[data-check]");
+  if (ck){ if(!canWrite()){ toast("Zum Abhaken bitte oben rechts anmelden"); return; }
+    const t=state.todos.get(ck.dataset.check); if(!t) return; const v=!t.done;
+    ck.setAttribute("aria-pressed",String(v)); ck.closest("li").classList.toggle("done",v);
+    try{ await state.db.doc("todos/"+t.id).update({done:v}); if(v) toast("Erledigt ✓"); }catch(err){ handleWriteError(err); renderTodos(); } return; }
   const pl=e.target.closest("[data-plants]"), ad=e.target.closest("[data-adopt]"), mv=e.target.closest("[data-mv]"), op=e.target.closest("[data-open]");
   if (pl){ showPlants(pl.dataset.plants.split(",")); return; }
   if (mv){ mv.disabled=true; await moveTodo(mv.dataset.tid, mv.dataset.mv); return; }
